@@ -1,0 +1,1422 @@
+{
+  "registros": [
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Fundos",
+      "data": "2026-06-10",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 54.72
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Fundos",
+      "data": "2026-06-11",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 95.04
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Fundos",
+      "data": "2026-06-12",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 62.24
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Fundos",
+      "data": "2026-06-14",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 212
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Fundos",
+      "data": "2026-06-15",
+      "servico": "Basecoat",
+      "areaM2": 48.96
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Fundos",
+      "data": "2026-06-16",
+      "servico": "Basecoat",
+      "areaM2": 57.6
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Fundos",
+      "data": "2026-07-16",
+      "servico": "Basecoat",
+      "areaM2": 52.72
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Fundos",
+      "data": "2026-07-17",
+      "servico": "Basecoat",
+      "areaM2": 52.72
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-17",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 20.16
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-18",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 24
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-19",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 25.92
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-22",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 17
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-26",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 14.92
+    },
+    {
+      "equipe": "William e Julio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-20",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 70.08
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-26",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 31.92
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-22",
+      "servico": "Basecoat",
+      "areaM2": 29.7
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-24",
+      "servico": "Basecoat",
+      "areaM2": 42
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-26",
+      "servico": "Basecoat",
+      "areaM2": 18.3
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-27",
+      "servico": "Basecoat",
+      "areaM2": 12
+    },
+    {
+      "equipe": "Walter",
+      "localizacao": "Lateral Direita",
+      "data": "2026-06-30",
+      "servico": "Basecoat",
+      "areaM2": 18.3
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-06-11",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 60.48
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-06-12",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 25.98
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-06-13",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 31.3
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-06-14",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 15.24
+    },
+    {
+      "equipe": "Carlos e Alex",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-10",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 25.46
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-14",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 36
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-15",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 25.51
+    },
+    {
+      "equipe": "William e Kauan",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-22",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 23.015
+    },
+    {
+      "equipe": "William e Kauan",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-23",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 23.015
+    },
+    {
+      "equipe": "Carlos e Alex",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-10",
+      "servico": "Basecoat",
+      "areaM2": 25.46
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-14",
+      "servico": "Basecoat",
+      "areaM2": 36
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-15",
+      "servico": "Basecoat",
+      "areaM2": 25.51
+    },
+    {
+      "equipe": "William e Kauan",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-22",
+      "servico": "Basecoat",
+      "areaM2": 23.015
+    },
+    {
+      "equipe": "William e Kauan",
+      "localizacao": "Lateral esquerda",
+      "data": "2026-07-23",
+      "servico": "Basecoat",
+      "areaM2": 23.015
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-14",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 15.84
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-15",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 17.28
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-16",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 24.48
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-17",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 15.84
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-18",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 9.6
+    },
+    {
+      "equipe": "Alex e Venancio",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-19",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 17.28
+    },
+    {
+      "equipe": "Rafael e Venâncio",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-23",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 13.44
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-24",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 13.44
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-25",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 25
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-29",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 34
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-30",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 8
+    },
+    {
+      "equipe": "Fabio e Alessandro",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-07-03",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 6.8
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-24",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 22.1
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-26",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 130.1
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-07-06",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 24.4
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-07-07",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 24.4
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-24",
+      "servico": "Basecoat",
+      "areaM2": 22.1
+    },
+    {
+      "equipe": "Walter e Carlos",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-06-26",
+      "servico": "Basecoat",
+      "areaM2": 130.1
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-07-06",
+      "servico": "Basecoat",
+      "areaM2": 24.4
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Fachada Frontal",
+      "data": "2026-07-07",
+      "servico": "Basecoat",
+      "areaM2": 24.4
+    },
+    {
+      "equipe": "Fabio e Alessandro",
+      "localizacao": "Laje Inferior Frontal",
+      "data": "2026-06-27",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 15.58
+    },
+    {
+      "equipe": "Fabio e Alessandro",
+      "localizacao": "Laje Inferior Frontal",
+      "data": "2026-06-28",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 15.84
+    },
+    {
+      "equipe": "Fabio e Alessandro",
+      "localizacao": "Laje Inferior Frontal",
+      "data": "2026-06-27",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 15.58
+    },
+    {
+      "equipe": "Fabio e Alessandro",
+      "localizacao": "Laje Inferior Frontal",
+      "data": "2026-06-28",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 15.84
+    },
+    {
+      "equipe": "Fabio e Alessandro",
+      "localizacao": "Laje Inferior Frontal",
+      "data": "2026-06-27",
+      "servico": "Basecoat",
+      "areaM2": 15.58
+    },
+    {
+      "equipe": "Fabio e Alessandro",
+      "localizacao": "Laje Inferior Frontal",
+      "data": "2026-06-28",
+      "servico": "Basecoat",
+      "areaM2": 15.84
+    },
+    {
+      "equipe": "Pedro,Kauan e Alessandro",
+      "localizacao": "Volume Caixa D'água",
+      "data": "2026-06-26",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 39
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Volume Caixa D'água",
+      "data": "2026-07-02",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 39
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Volume Caixa D'água",
+      "data": "2026-07-02",
+      "servico": "Basecoat",
+      "areaM2": 39
+    },
+    {
+      "equipe": "Pedro e Kauan",
+      "localizacao": "Platibanda",
+      "data": "2026-06-26",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 35.1
+    },
+    {
+      "equipe": "Pedro e Kauan",
+      "localizacao": "Platibanda",
+      "data": "2026-06-27",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 35.1
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Platibanda",
+      "data": "2026-06-29",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 46.8
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Platibanda",
+      "data": "2026-06-30",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 117
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Platibanda",
+      "data": "2026-07-01",
+      "servico": "Basecoat",
+      "areaM2": 87.75
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Platibanda",
+      "data": "2026-07-02",
+      "servico": "Basecoat",
+      "areaM2": 29.25
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-06-29",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 25
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-06-30",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 40
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-07-03",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 25
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-07-09",
+      "servico": "Plaqueamento Glasroc-x",
+      "areaM2": 6
+    },
+    {
+      "equipe": "William e Venancio",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-06-30",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 40
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-07-08",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 20
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-07-09",
+      "servico": "Tratamento de Juntas",
+      "areaM2": 36
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-07-08",
+      "servico": "Basecoat",
+      "areaM2": 40
+    },
+    {
+      "equipe": "William",
+      "localizacao": "Coroamento Platibanda",
+      "data": "2026-07-09",
+      "servico": "Basecoat",
+      "areaM2": 56
+    }
+  ],
+  "escopo": [
+    {
+      "localizacao": "Frontal",
+      "areaTotalM2": 201
+    },
+    {
+      "localizacao": "Lateral Direita",
+      "areaTotalM2": 102
+    },
+    {
+      "localizacao": "Fundos",
+      "areaTotalM2": 212
+    },
+    {
+      "localizacao": "Lateral Esquerda",
+      "areaTotalM2": 133
+    },
+    {
+      "localizacao": "Platibanda",
+      "areaTotalM2": 117
+    },
+    {
+      "localizacao": "Volume Caixa D'água",
+      "areaTotalM2": 39
+    },
+    {
+      "localizacao": "Coroamento da Platibanda",
+      "areaTotalM2": 96
+    },
+    {
+      "localizacao": "Laje Inferior Frontal",
+      "areaTotalM2": 31.42
+    }
+  ],
+  "resumos": [],
+  "paredes": [
+    {
+      "n": 1,
+      "altura": 3.6,
+      "comprimento": 3.44,
+      "area": 12.384,
+      "data": "2026-06-12"
+    },
+    {
+      "n": 2,
+      "altura": 3.6,
+      "comprimento": 3.44,
+      "area": 12.384,
+      "data": "2026-06-12"
+    },
+    {
+      "n": 3,
+      "altura": 3.6,
+      "comprimento": 3.44,
+      "area": 12.384,
+      "data": "2026-06-25"
+    },
+    {
+      "n": 4,
+      "altura": 3.5,
+      "comprimento": 7.26,
+      "area": 25.41,
+      "data": "2026-06-12"
+    },
+    {
+      "n": 5,
+      "altura": 3.5,
+      "comprimento": 3.5,
+      "area": 12.25,
+      "data": "2026-06-24"
+    },
+    {
+      "n": 6,
+      "altura": 3.5,
+      "comprimento": 5.73,
+      "area": 20.055,
+      "data": "2026-06-13"
+    },
+    {
+      "n": 7,
+      "altura": 3.5,
+      "comprimento": 2.07,
+      "area": 7.244999999999999,
+      "data": "2026-06-25"
+    },
+    {
+      "n": 8,
+      "altura": 3.5,
+      "comprimento": 2.11,
+      "area": 7.385,
+      "data": "2026-06-24"
+    },
+    {
+      "n": 9,
+      "altura": 3.5,
+      "comprimento": 3,
+      "area": 10.5,
+      "data": "2026-06-12"
+    },
+    {
+      "n": 10,
+      "altura": 3.5,
+      "comprimento": 5.73,
+      "area": 20.055,
+      "data": "2026-06-13"
+    },
+    {
+      "n": 11,
+      "altura": 3.6,
+      "comprimento": 3.5,
+      "area": 12.6,
+      "data": "2026-07-10"
+    },
+    {
+      "n": 12,
+      "altura": 3.5,
+      "comprimento": 3,
+      "area": 10.5,
+      "data": "2026-06-12"
+    },
+    {
+      "n": 13,
+      "altura": 3.5,
+      "comprimento": 4.2,
+      "area": 14.700000000000001,
+      "data": "2026-06-12"
+    },
+    {
+      "n": 14,
+      "altura": 3.5,
+      "comprimento": 1.2,
+      "area": 4.2,
+      "data": "2026-06-25"
+    },
+    {
+      "n": 15,
+      "altura": 3.5,
+      "comprimento": 4.2,
+      "area": 14.700000000000001,
+      "data": "2026-06-24"
+    },
+    {
+      "n": 16,
+      "altura": 3.5,
+      "comprimento": 4.2,
+      "area": 14.700000000000001,
+      "data": "2026-06-24"
+    },
+    {
+      "n": 17,
+      "altura": 3.6,
+      "comprimento": 3.6,
+      "area": 12.96,
+      "data": "2026-06-25"
+    },
+    {
+      "n": 18,
+      "altura": 3.6,
+      "comprimento": 3.5,
+      "area": 12.6,
+      "data": "2026-06-25"
+    },
+    {
+      "n": 19,
+      "altura": 3.5,
+      "comprimento": 1.2,
+      "area": 4.2,
+      "data": "2026-06-25"
+    }
+  ],
+  "tipos": [
+    {
+      "id": "pc-ugl",
+      "descricao": "Porcelanato UGL 90x90 Polido 8 mm Eliane Minimun Cimento PO",
+      "areaTotalM2": 397.46
+    },
+    {
+      "id": "pc-parede",
+      "descricao": "Revestimento de Parede Forma Branco 32x60",
+      "areaTotalM2": 27.36
+    }
+  ],
+  "apontamentos": [
+    {
+      "id": "pa-1",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 17,
+      "dataExecucao": "2026-06-22"
+    },
+    {
+      "id": "pa-2",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 49.41,
+      "dataExecucao": "2026-06-23"
+    },
+    {
+      "id": "pa-3",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 32.4,
+      "dataExecucao": "2026-06-24"
+    },
+    {
+      "id": "pa-4",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 40.5,
+      "dataExecucao": "2026-06-25"
+    },
+    {
+      "id": "pa-5",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 47.8,
+      "dataExecucao": "2026-06-26"
+    },
+    {
+      "id": "pa-6",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 12.96,
+      "dataExecucao": "2026-06-27"
+    },
+    {
+      "id": "pa-7",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 18.63,
+      "dataExecucao": "2026-06-29"
+    },
+    {
+      "id": "pa-8",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 12.96,
+      "dataExecucao": "2026-07-01"
+    },
+    {
+      "id": "pa-9",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 18.63,
+      "dataExecucao": "2026-07-01"
+    },
+    {
+      "id": "pa-10",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 31.27,
+      "dataExecucao": "2026-07-02"
+    },
+    {
+      "id": "pa-11",
+      "tipoId": "pc-parede",
+      "areaExecutadaM2": 11.4,
+      "dataExecucao": "2026-07-02"
+    },
+    {
+      "id": "pa-12",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 6.15,
+      "dataExecucao": "2026-07-03"
+    },
+    {
+      "id": "pa-13",
+      "tipoId": "pc-parede",
+      "areaExecutadaM2": 7.6,
+      "dataExecucao": "2026-07-03"
+    },
+    {
+      "id": "pa-14",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 4.65,
+      "dataExecucao": "2026-07-07"
+    },
+    {
+      "id": "pa-15",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 10.62,
+      "dataExecucao": "2026-07-07"
+    },
+    {
+      "id": "pa-16",
+      "tipoId": "pc-parede",
+      "areaExecutadaM2": 8.36,
+      "dataExecucao": "2026-07-07"
+    },
+    {
+      "id": "pa-17",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 7.04,
+      "dataExecucao": "2026-07-08"
+    },
+    {
+      "id": "pa-18",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 24.78,
+      "dataExecucao": "2026-07-08"
+    },
+    {
+      "id": "pa-19",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 4,
+      "dataExecucao": "2026-07-09"
+    },
+    {
+      "id": "pa-20",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 24.7,
+      "dataExecucao": "2026-07-09"
+    },
+    {
+      "id": "pa-21",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 24.7,
+      "dataExecucao": "2026-07-10"
+    },
+    {
+      "id": "pa-22",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 4,
+      "dataExecucao": "2026-07-10"
+    },
+    {
+      "id": "pa-23",
+      "tipoId": "pc-ugl",
+      "areaExecutadaM2": 5.26,
+      "dataExecucao": "2026-07-10"
+    }
+  ],
+  "paredesInterno": [
+    {
+      "codigo": "01",
+      "tipo": "drywall",
+      "performaM2": 22.703999999999997,
+      "data": "2026-07-13"
+    },
+    {
+      "codigo": "02",
+      "tipo": "drywall",
+      "performaM2": 22.703999999999997,
+      "data": "2026-07-08"
+    },
+    {
+      "codigo": "03",
+      "tipo": "drywall",
+      "performaM2": 22.703999999999997,
+      "data": "2026-07-07"
+    },
+    {
+      "codigo": "04",
+      "tipo": "drywall",
+      "performaM2": 47.916,
+      "data": "2026-07-08"
+    },
+    {
+      "codigo": "05",
+      "tipo": "drywall",
+      "performaM2": 11.6,
+      "ruM2": 11.6,
+      "data": "2026-07-02"
+    },
+    {
+      "codigo": "06",
+      "tipo": "drywall",
+      "performaM2": 37.818,
+      "data": "2026-07-04"
+    },
+    {
+      "codigo": "07",
+      "tipo": "drywall",
+      "performaM2": 13.661999999999999,
+      "data": "2026-07-02"
+    },
+    {
+      "codigo": "08",
+      "tipo": "drywall",
+      "ruM2": 13.925999999999998,
+      "data": "2026-07-07"
+    },
+    {
+      "codigo": "09",
+      "tipo": "drywall",
+      "performaM2": 19.799999999999997,
+      "data": "2026-07-08"
+    },
+    {
+      "codigo": "10",
+      "tipo": "drywall",
+      "performaM2": 37.818,
+      "data": "2026-07-05"
+    },
+    {
+      "codigo": "11",
+      "tipo": "drywall",
+      "performaM2": 23.099999999999998,
+      "data": "2026-07-13"
+    },
+    {
+      "codigo": "12",
+      "tipo": "drywall",
+      "performaM2": 19.799999999999997,
+      "data": "2026-07-07"
+    },
+    {
+      "codigo": "13",
+      "tipo": "drywall",
+      "performaM2": 27.72,
+      "data": "2026-07-07"
+    },
+    {
+      "codigo": "14",
+      "tipo": "drywall",
+      "performaM2": 7.9,
+      "ruM2": 7.919999999999999,
+      "data": "2026-07-07"
+    },
+    {
+      "codigo": "15",
+      "tipo": "drywall",
+      "performaM2": 13.86,
+      "ruM2": 13.86,
+      "data": "2026-07-02"
+    },
+    {
+      "codigo": "16",
+      "tipo": "drywall",
+      "performaM2": 27.72,
+      "data": "2026-07-05"
+    },
+    {
+      "codigo": "17",
+      "tipo": "drywall",
+      "performaM2": 23.759999999999998,
+      "data": "2026-07-02"
+    },
+    {
+      "codigo": "18",
+      "tipo": "drywall",
+      "performaM2": 23.099999999999998,
+      "data": "2026-07-02"
+    },
+    {
+      "codigo": "19",
+      "tipo": "drywall",
+      "performaM2": 7.919999999999999,
+      "data": "2026-07-08"
+    },
+    {
+      "codigo": "PS1",
+      "tipo": "steel",
+      "areaM2": 37.3,
+      "performaM2": 37.3,
+      "data": "2026-07-09"
+    },
+    {
+      "codigo": "PS2",
+      "tipo": "steel",
+      "areaM2": 9.9,
+      "performaM2": 9.9,
+      "data": "2026-07-08"
+    },
+    {
+      "codigo": "PS3",
+      "tipo": "steel",
+      "areaM2": 9.9,
+      "performaM2": 9.9,
+      "data": "2026-07-03"
+    },
+    {
+      "codigo": "PS4",
+      "tipo": "steel",
+      "areaM2": 11.22,
+      "performaM2": 11.22,
+      "data": "2026-07-03"
+    },
+    {
+      "codigo": "PS5",
+      "tipo": "steel",
+      "areaM2": 31.41,
+      "performaM2": 12.87,
+      "ruM2": 18.54,
+      "data": "2026-06-30"
+    },
+    {
+      "codigo": "PS6",
+      "tipo": "steel",
+      "areaM2": 22.1,
+      "performaM2": 22.1,
+      "data": "2026-06-30"
+    },
+    {
+      "codigo": "PS6X",
+      "tipo": "steel",
+      "areaM2": 26.8,
+      "performaM2": 26.8,
+      "data": "2026-07-01"
+    },
+    {
+      "codigo": "PS7",
+      "tipo": "steel",
+      "areaM2": 51.48,
+      "ruM2": 51.48,
+      "data": "2026-06-30"
+    },
+    {
+      "codigo": "PS7X",
+      "tipo": "steel",
+      "areaM2": 17.65,
+      "performaM2": 17.65,
+      "data": "2026-07-02"
+    },
+    {
+      "codigo": "PS8",
+      "tipo": "steel",
+      "areaM2": 28.05,
+      "ruM2": 28.05,
+      "data": "2026-07-01"
+    },
+    {
+      "codigo": "PS9",
+      "tipo": "steel",
+      "areaM2": 19.8,
+      "ruM2": 19.8,
+      "data": "2026-07-07"
+    },
+    {
+      "codigo": "PS10",
+      "tipo": "steel",
+      "areaM2": 35.6,
+      "performaM2": 35.6,
+      "data": "2026-07-01"
+    },
+    {
+      "codigo": "PS11",
+      "tipo": "steel",
+      "areaM2": 9.57,
+      "performaM2": 9.57,
+      "data": "2026-07-06"
+    },
+    {
+      "codigo": "PS12",
+      "tipo": "steel",
+      "areaM2": 35.24,
+      "performaM2": 35.24,
+      "data": "2026-07-22"
+    },
+    {
+      "codigo": "PS12X",
+      "tipo": "steel",
+      "areaM2": 11.549999999999999,
+      "performaM2": 11.549999999999999,
+      "data": "2026-07-02"
+    },
+    {
+      "codigo": "PS12X'",
+      "tipo": "steel",
+      "areaM2": 11.549999999999999,
+      "performaM2": 11.549999999999999,
+      "data": "2026-07-05"
+    },
+    {
+      "codigo": "PS13",
+      "tipo": "steel",
+      "areaM2": 29.83,
+      "performaM2": 29.83,
+      "data": "2026-07-06"
+    },
+    {
+      "codigo": "PS14",
+      "tipo": "steel",
+      "areaM2": 18.87,
+      "performaM2": 18.87,
+      "data": "2026-07-03"
+    },
+    {
+      "codigo": "PS15",
+      "tipo": "steel",
+      "areaM2": 21.6,
+      "performaM2": 21.6,
+      "data": "2026-07-04"
+    },
+    {
+      "codigo": "PS16",
+      "tipo": "steel",
+      "areaM2": 10.06,
+      "performaM2": 10.06,
+      "data": "2026-07-05"
+    },
+    {
+      "codigo": "PS17",
+      "tipo": "steel",
+      "areaM2": 28.85,
+      "performaM2": 28.85,
+      "data": "2026-07-05"
+    }
+  ],
+  "escopoInterno": {},
+  "forro": [
+    {
+      "id": "fr-1",
+      "ambiente": "Autoatendimento",
+      "areaM2": 27.14,
+      "dataEstruturacao": "2026-07-18",
+      "dataPlaqueamento": "2026-07-18"
+    },
+    {
+      "id": "fr-2",
+      "ambiente": "Abastecimento",
+      "areaM2": 9.05,
+      "dataEstruturacao": "2026-07-17",
+      "dataPlaqueamento": "2026-07-19"
+    },
+    {
+      "id": "fr-3",
+      "ambiente": "Tesouraria",
+      "areaM2": 12.39,
+      "dataEstruturacao": "2026-07-11",
+      "dataPlaqueamento": "2026-07-12"
+    },
+    {
+      "id": "fr-4",
+      "ambiente": "Cofre",
+      "areaM2": 2.25,
+      "dataEstruturacao": "2026-07-28",
+      "dataPlaqueamento": "2026-07-29"
+    },
+    {
+      "id": "fr-5",
+      "ambiente": "Área de Circulação",
+      "areaM2": 84.68,
+      "dataEstruturacao": "2026-07-17",
+      "dataPlaqueamento": "2026-07-20"
+    },
+    {
+      "id": "fr-6",
+      "ambiente": "Espaço Instagramável",
+      "areaM2": 9.27,
+      "dataEstruturacao": "2026-07-17",
+      "dataPlaqueamento": "2026-07-20"
+    },
+    {
+      "id": "fr-7",
+      "ambiente": "Servidor",
+      "areaM2": 9.45,
+      "dataEstruturacao": "2026-07-28",
+      "dataPlaqueamento": "2026-07-29"
+    },
+    {
+      "id": "fr-8",
+      "ambiente": "Almoxarifado",
+      "areaM2": 15.73,
+      "dataEstruturacao": "2026-07-12",
+      "dataPlaqueamento": "2026-07-13"
+    },
+    {
+      "id": "fr-9",
+      "ambiente": "Circulação",
+      "areaM2": 11.24,
+      "dataEstruturacao": "2026-07-13",
+      "dataPlaqueamento": "2026-07-13"
+    },
+    {
+      "id": "fr-10",
+      "ambiente": "Circulação (2)",
+      "areaM2": 11.55,
+      "dataEstruturacao": "2026-07-11",
+      "dataPlaqueamento": "2026-07-12"
+    },
+    {
+      "id": "fr-11",
+      "ambiente": "I.S PcD Fem.",
+      "areaM2": 4,
+      "dataEstruturacao": "2026-07-13",
+      "dataPlaqueamento": "2026-07-13"
+    },
+    {
+      "id": "fr-12",
+      "ambiente": "I.S PcD Masc.",
+      "areaM2": 4,
+      "dataEstruturacao": "2026-07-13",
+      "dataPlaqueamento": "2026-07-13"
+    },
+    {
+      "id": "fr-13",
+      "ambiente": "I.S Masc.",
+      "areaM2": 6.15,
+      "dataEstruturacao": "2026-07-14",
+      "dataPlaqueamento": "2026-07-14"
+    },
+    {
+      "id": "fr-14",
+      "ambiente": "I.S Fem.",
+      "areaM2": 14.3,
+      "dataEstruturacao": "2026-07-14",
+      "dataPlaqueamento": "2026-07-14"
+    },
+    {
+      "id": "fr-15",
+      "ambiente": "Circulação (3)",
+      "areaM2": 12.4,
+      "dataEstruturacao": "2026-07-16",
+      "dataPlaqueamento": "2026-07-16"
+    },
+    {
+      "id": "fr-16",
+      "ambiente": "Descompressão",
+      "areaM2": 7.84,
+      "dataEstruturacao": "2026-07-27",
+      "dataPlaqueamento": "2026-07-27"
+    },
+    {
+      "id": "fr-17",
+      "ambiente": "DML e Copa",
+      "areaM2": 13.65,
+      "dataEstruturacao": "2026-07-28",
+      "dataPlaqueamento": "2026-07-29"
+    },
+    {
+      "id": "fr-18",
+      "ambiente": "Circulação (4)",
+      "areaM2": 5.27,
+      "dataEstruturacao": "2026-07-24",
+      "dataPlaqueamento": "2026-07-24"
+    },
+    {
+      "id": "fr-19",
+      "ambiente": "CoWorking 01",
+      "areaM2": 7.52,
+      "dataEstruturacao": "2026-07-21",
+      "dataPlaqueamento": "2026-07-21"
+    },
+    {
+      "id": "fr-20",
+      "ambiente": "CoWorking 02",
+      "areaM2": 7.52,
+      "dataEstruturacao": "2026-07-21",
+      "dataPlaqueamento": "2026-07-21"
+    },
+    {
+      "id": "fr-21",
+      "ambiente": "AT.01",
+      "areaM2": 6.6,
+      "dataEstruturacao": "2026-07-21",
+      "dataPlaqueamento": "2026-07-21"
+    },
+    {
+      "id": "fr-22",
+      "ambiente": "AT.02",
+      "areaM2": 6.57,
+      "dataEstruturacao": "2026-07-21",
+      "dataPlaqueamento": "2026-07-21"
+    },
+    {
+      "id": "fr-23",
+      "ambiente": "AT.03",
+      "areaM2": 6.57,
+      "dataEstruturacao": "2026-07-21",
+      "dataPlaqueamento": "2026-07-21"
+    },
+    {
+      "id": "fr-24",
+      "ambiente": "AT.04",
+      "areaM2": 6.57,
+      "dataEstruturacao": "2026-07-23",
+      "dataPlaqueamento": "2026-07-23"
+    },
+    {
+      "id": "fr-25",
+      "ambiente": "AT.05",
+      "areaM2": 6.57,
+      "dataEstruturacao": "2026-07-23",
+      "dataPlaqueamento": "2026-07-23"
+    },
+    {
+      "id": "fr-26",
+      "ambiente": "AT.06",
+      "areaM2": 6.57,
+      "dataEstruturacao": "2026-07-23",
+      "dataPlaqueamento": "2026-07-23"
+    },
+    {
+      "id": "fr-27",
+      "ambiente": "AT.07",
+      "areaM2": 6.57,
+      "dataEstruturacao": "2026-07-23",
+      "dataPlaqueamento": "2026-07-23"
+    },
+    {
+      "id": "fr-28",
+      "ambiente": "AT.08",
+      "areaM2": 6.57,
+      "dataEstruturacao": "2026-07-23",
+      "dataPlaqueamento": "2026-07-23"
+    },
+    {
+      "id": "fr-29",
+      "ambiente": "AT.09",
+      "areaM2": 7.55,
+      "dataEstruturacao": "2026-07-22",
+      "dataPlaqueamento": "2026-07-22"
+    },
+    {
+      "id": "fr-30",
+      "ambiente": "AT.10",
+      "areaM2": 7.55,
+      "dataEstruturacao": "2026-07-22",
+      "dataPlaqueamento": "2026-07-22"
+    },
+    {
+      "id": "fr-31",
+      "ambiente": "AT.11",
+      "areaM2": 7.55,
+      "dataEstruturacao": "2026-07-22",
+      "dataPlaqueamento": "2026-07-22"
+    },
+    {
+      "id": "fr-32",
+      "ambiente": "AT.12",
+      "areaM2": 7.55,
+      "dataEstruturacao": "2026-07-22",
+      "dataPlaqueamento": "2026-07-22"
+    },
+    {
+      "id": "fr-33",
+      "ambiente": "AT.13",
+      "areaM2": 7.52,
+      "dataEstruturacao": "2026-07-21",
+      "dataPlaqueamento": "2026-07-21"
+    },
+    {
+      "id": "fr-34",
+      "ambiente": "Recepção e Área de Espera",
+      "areaM2": 77.76,
+      "dataEstruturacao": "2026-07-26",
+      "dataPlaqueamento": "2026-07-29"
+    },
+    {
+      "id": "fr-35",
+      "ambiente": "Assistentes",
+      "areaM2": 9.9,
+      "dataEstruturacao": "2026-07-24",
+      "dataPlaqueamento": "2026-07-24"
+    },
+    {
+      "id": "fr-36",
+      "ambiente": "Sala de Reunião",
+      "areaM2": 16.14,
+      "dataEstruturacao": "2026-07-26",
+      "dataPlaqueamento": "2026-07-26"
+    },
+    {
+      "id": "fr-37",
+      "ambiente": "Sala G.A",
+      "areaM2": 9.75,
+      "dataEstruturacao": "2026-07-26",
+      "dataPlaqueamento": "2026-07-26"
+    },
+    {
+      "id": "fr-38",
+      "ambiente": "Sala G.O",
+      "areaM2": 9.75,
+      "dataEstruturacao": "2026-07-26",
+      "dataPlaqueamento": "2026-07-26"
+    },
+    {
+      "id": "fr-39",
+      "ambiente": "Sala de Negócios PJ",
+      "areaM2": 16.05,
+      "dataEstruturacao": "2026-07-25",
+      "dataPlaqueamento": "2026-07-25"
+    },
+    {
+      "id": "fr-40",
+      "ambiente": "Sala de Negócios PF",
+      "areaM2": 12.42,
+      "dataEstruturacao": "2026-07-24",
+      "dataPlaqueamento": "2026-07-24"
+    }
+  ]
+}
