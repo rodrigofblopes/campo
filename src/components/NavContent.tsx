@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   BarChart3,
+  Camera,
   ClipboardList,
   Clock,
   FileText,
@@ -17,6 +18,7 @@ import { hrefGrupo, hrefObra } from "@/lib/grupos-nav";
 export function linksPrincipais(obraId: string) {
   return [
     { href: hrefObra(obraId), label: "Dashboard", icon: Home },
+    { href: hrefObra(obraId, "/vistoria"), label: "Vistoria", icon: Camera },
     { href: hrefObra(obraId, "/resumo"), label: "Resumo", icon: BarChart3 },
     { href: hrefObra(obraId, "/relatorios"), label: "Relatório PDF", icon: FileText },
     { href: hrefObra(obraId, "/estimativas"), label: "Estimativas", icon: Clock },
@@ -34,6 +36,7 @@ export function linkConferencia(obraId: string) {
 export function tituloPagina(pathname: string, obraId: string): string {
   const base = hrefObra(obraId);
   if (pathname === base) return "Dashboard";
+  if (pathname === hrefObra(obraId, "/vistoria")) return "Vistoria";
   if (pathname === hrefObra(obraId, "/resumo")) return "Resumo";
   if (pathname === hrefObra(obraId, "/relatorios")) return "Relatório PDF";
   if (pathname === hrefObra(obraId, "/producao")) return "Conferência";
