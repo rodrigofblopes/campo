@@ -1,22 +1,24 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Camera, Plus, Send, X } from "lucide-react";
+import { Camera, Plus, Send, Trash2, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
+import { compartilharImagemVistoria } from "@/lib/image-vistoria";
 import {
   contarPendencias,
   getVistorias,
   salvarNovaVistoria,
   atualizarVistoria,
+  excluirVistoria,
 } from "@/lib/vistoria-storage";
 import type {
   PendenciaVistoria,
   StatusPendencia,
   VistoriaObra,
 } from "@/lib/vistoria-types";
-import { statusEfetivo } from "@/lib/vistoria-types";
+import { EQUIPES, statusEfetivo } from "@/lib/vistoria-types";
 import type { ObraMeta } from "@/lib/obras";
 
 function novoId(): string {
@@ -30,6 +32,7 @@ function novaPendenciaDraft(): PendenciaVistoria {
     id: novoId(),
     local: "",
     responsavel: "",
+    equipe: "",
     prioridade: "Média",
     prazo: "",
     descricao: "",
@@ -196,16 +199,22 @@ export function VistoriaContent({
     setData(new Date().toISOString().slice(0, 10));
   }
 
-  async function handleGerarPdf() {
+  async function handleEnviarWhatsApp(formato: "pdf" | "imagem") {
     const erro = validar();
     if (erro) return alert(erro);
     setSalvando(true);
     try {
       const vistoria = montarVistoria();
-      const doc = gerarPDFVistoria(vistoria);
-      doc.save(nomeArquivoVistoria(vistoria));
       const salvo = await salvarNovaVistoria(obraId, vistoria);
-      if (!salvo) alert("PDF gerado. Sem conexão agora — vamos tentar salvar no histórico automaticamente assim que possível.");
+      if (!salvo)
+        alert(
+          "Sem conexão agora — vamos tentar salvar no histórico automaticamente depois. O envio será feito normalmente."
+        );
+      if (formato === "pdf") {
+        await compartilharVistoria(vistoria);
+      } else {
+        await compartilharImagemVistoria(vistoria);
+      }
       limparFormulario();
       setVistorias(await getVistorias(obraId));
       setAba("historico");
@@ -214,21 +223,15 @@ export function VistoriaContent({
     }
   }
 
-  async function handleEnviarWhatsApp() {
-    const erro = validar();
-    if (erro) return alert(erro);
-    setSalvando(true);
-    try {
-      const vistoria = montarVistoria();
-      const salvo = await salvarNovaVistoria(obraId, vistoria);
-      if (!salvo) alert("Sem conexão agora — vamos tentar salvar no histórico automaticamente depois. O PDF será compartilhado normalmente.");
-      await compartilharVistoria(vistoria);
-      limparFormulario();
-      setVistorias(await getVistorias(obraId));
-      setAba("historico");
-    } finally {
-      setSalvando(false);
+  async function handleExcluirVistoria(vistoriaId: string) {
+    if (!window.confirm("Excluir esta vistoria? Essa ação não pode ser desfeita.")) return;
+    const ok = await excluirVistoria(vistoriaId);
+    if (!ok) {
+      alert("Não foi possível excluir agora. Verifique a conexão e tente novamente.");
+      return;
     }
+    setVistorias((lista) => lista.filter((v) => v.id !== vistoriaId));
+    setAbertoId((atual) => (atual === vistoriaId ? null : atual));
   }
 
   async function handleUpdateStatus(vistoriaId: string, itemId: string, status: StatusPendencia) {
@@ -276,7 +279,7 @@ export function VistoriaContent({
     <>
       <PageHeader
         title="Vistoria de Obra"
-        description="Registre pendências com foto, prazo e responsável — e envie o PDF por WhatsApp para quem vai executar."
+        description="Registre pendências com foto, prazo e responsável — e envie a Atividade por WhatsApp para quem vai executar."
       />
 
       <HorizontalScrollTabs className="mb-5">
@@ -357,7 +360,22 @@ export function VistoriaContent({
                   </label>
                 </div>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-500">Equipe</span>
+                    <select
+                      value={item.equipe || ""}
+                      onChange={(e) => atualizarItem(item.id, { equipe: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    >
+                      <option value="">Selecione</option>
+                      {EQUIPES.map((eq) => (
+                        <option key={eq} value={eq}>
+                          {eq}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <label className="block">
                     <span className="text-xs font-medium text-slate-500">Prioridade</span>
                     <select
@@ -429,23 +447,26 @@ export function VistoriaContent({
             <Plus size={16} /> Adicionar pendência
           </button>
 
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              disabled={salvando}
-              onClick={handleGerarPdf}
-              className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            >
-              Gerar PDF
-            </button>
-            <button
-              type="button"
-              disabled={salvando}
-              onClick={handleEnviarWhatsApp}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              <Send size={16} /> Enviar WhatsApp
-            </button>
+          <div className="mt-5">
+            <p className="mb-2 text-xs font-medium text-slate-500">Enviar por WhatsApp como:</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                disabled={salvando}
+                onClick={() => handleEnviarWhatsApp("pdf")}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <Send size={16} /> PDF
+              </button>
+              <button
+                type="button"
+                disabled={salvando}
+                onClick={() => handleEnviarWhatsApp("imagem")}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Send size={16} /> Imagem
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -480,6 +501,12 @@ export function VistoriaContent({
               {vistorias.map((v) => {
                 const concluidas = v.itens.filter((it) => it.status === "Concluído").length;
                 const aberto = abertoId === v.id;
+                const hoje = new Date().toISOString().slice(0, 10);
+                const locais = v.itens.map((it) => it.local || "Pendência");
+                const equipesUnicas = Array.from(
+                  new Set(v.itens.map((it) => it.equipe).filter((eq): eq is string => Boolean(eq)))
+                );
+                const temAtrasado = v.itens.some((it) => statusEfetivo(it, hoje) === "Atrasado");
                 return (
                   <Card key={v.id} className="p-0">
                     <button
@@ -487,7 +514,7 @@ export function VistoriaContent({
                       onClick={() => setAbertoId(aberto ? null : v.id)}
                       className="flex w-full items-start justify-between gap-3 p-4 text-left"
                     >
-                      <div>
+                      <div className="min-w-0">
                         <h3 className="text-sm font-bold text-slate-900">
                           {v.data.split("-").reverse().join("/")} · {v.responsavelVistoria || "-"}
                         </h3>
@@ -497,26 +524,44 @@ export function VistoriaContent({
                           </span>{" "}
                           pendência(s) concluída(s)
                         </p>
+                        {locais.length > 0 && (
+                          <p className="mt-1 truncate text-xs text-slate-600">{locais.join(" · ")}</p>
+                        )}
+                        {(equipesUnicas.length > 0 || temAtrasado) && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {temAtrasado && <Badge variant="danger">Atrasado</Badge>}
+                            {equipesUnicas.map((eq) => (
+                              <Badge key={eq} variant="default">
+                                {eq}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </button>
 
                     <div className="flex gap-2 px-4 pb-4">
                       <button
                         type="button"
-                        onClick={() => {
-                          const doc = gerarPDFVistoria(v);
-                          doc.save(nomeArquivoVistoria(v));
-                        }}
+                        onClick={() => compartilharVistoria(v)}
                         className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
                       >
-                        Gerar PDF
+                        WhatsApp (PDF)
                       </button>
                       <button
                         type="button"
-                        onClick={() => compartilharVistoria(v)}
+                        onClick={() => compartilharImagemVistoria(v)}
                         className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
                       >
-                        Enviar WhatsApp
+                        WhatsApp (Imagem)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleExcluirVistoria(v.id)}
+                        aria-label="Excluir vistoria"
+                        className="rounded-lg border border-red-200 bg-white px-3 py-2 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 size={14} />
                       </button>
                     </div>
 
@@ -529,7 +574,10 @@ export function VistoriaContent({
                             <div key={item.id} className="rounded-lg bg-slate-50 p-3">
                               <div className="flex items-center justify-between gap-2">
                                 <strong className="text-sm text-slate-900">{item.local || "Pendência"}</strong>
-                                <Badge variant={badgeVariant(status)}>{status}</Badge>
+                                <div className="flex gap-1">
+                                  {item.equipe && <Badge variant="default">{item.equipe}</Badge>}
+                                  <Badge variant={badgeVariant(status)}>{status}</Badge>
+                                </div>
                               </div>
                               <p className="mt-1 text-xs text-slate-500">{item.descricao}</p>
                               <p className="mt-1 text-xs text-slate-400">
