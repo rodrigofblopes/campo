@@ -27,8 +27,8 @@ export default function ObrasHomePage() {
             <div className="min-w-0 flex-1">
               <h2 className="text-lg font-bold text-slate-900">Vistoria de Obra</h2>
               <p className="mt-0.5 text-sm text-slate-600">
-                Registre pendências com foto e envie o PDF por WhatsApp. Acesso
-                livre, sem senha.
+                Registre pendências com foto e envie a Atividade por WhatsApp.
+                Acesso livre, sem senha.
               </p>
             </div>
             <ArrowRight className="shrink-0 text-blue-400" size={20} />
