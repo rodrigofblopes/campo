@@ -1,10 +1,23 @@
 export type PrioridadePendencia = "Baixa" | "Média" | "Alta";
 export type StatusPendencia = "Pendente" | "Em execução" | "Concluído";
 
+export const EQUIPES = [
+  "Estrutura (Steel Frame)",
+  "Elétrica",
+  "Hidráulica",
+  "Drywall",
+  "Pintura",
+  "Esquadrias",
+  "Acabamento",
+  "Civil",
+  "Outros",
+] as const;
+
 export interface PendenciaVistoria {
   id: string;
   local: string;
   responsavel: string;
+  equipe?: string;
   prioridade: PrioridadePendencia;
   inicioPrevisto?: string; // yyyy-mm-dd
   prazo: string; // yyyy-mm-dd
