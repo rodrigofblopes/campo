@@ -32,6 +32,10 @@ function ajustarAoBox(
   return { w, h };
 }
 
+function responsavelComEquipe(item: PendenciaVistoria): string {
+  return item.equipe ? `${item.responsavel || "-"} (${item.equipe})` : item.responsavel || "-";
+}
+
 function textoFallback(doc: jsPDF, item: PendenciaVistoria, y: number, pageW: number, margem: number): number {
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
@@ -41,7 +45,7 @@ function textoFallback(doc: jsPDF, item: PendenciaVistoria, y: number, pageW: nu
   doc.setFont("helvetica", "bold");
   doc.text("Responsável:", margem, y + 12);
   doc.setFont("helvetica", "normal");
-  doc.text(item.responsavel || "-", margem + 27, y + 12);
+  doc.text(responsavelComEquipe(item), margem + 27, y + 12);
   doc.setFont("helvetica", "bold");
   doc.text("Prazo:", margem, y + 19);
   doc.setFont("helvetica", "normal");
@@ -102,7 +106,7 @@ export function gerarPDFVistoria(vistoria: VistoriaObra): jsPDF {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text(
-      `Pendência ${i + 1} — ${statusEfetivo(item, hoje)} — Prioridade ${item.prioridade}`,
+      `Pendência ${i + 1} — ${statusEfetivo(item, hoje)} — Prioridade ${item.prioridade}${item.equipe ? ` — ${item.equipe}` : ""}`,
       margem + 2,
       y
     );
@@ -126,7 +130,7 @@ export function gerarPDFVistoria(vistoria: VistoriaObra): jsPDF {
         doc.setFont("helvetica", "bold");
         doc.text("Responsável:", textX, y + 12);
         doc.setFont("helvetica", "normal");
-        doc.text(doc.splitTextToSize(item.responsavel || "-", textW - 28), textX + 28, y + 12);
+        doc.text(doc.splitTextToSize(responsavelComEquipe(item), textW - 28), textX + 28, y + 12);
         doc.setFont("helvetica", "bold");
         doc.text("Prazo:", textX, y + 19);
         doc.setFont("helvetica", "normal");
