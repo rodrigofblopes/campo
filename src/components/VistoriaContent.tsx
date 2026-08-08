@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Camera, Plus, Send, X } from "lucide-react";
+import { Camera, Plus, Send, Trash2, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
@@ -11,6 +11,7 @@ import {
   getVistorias,
   salvarNovaVistoria,
   atualizarVistoria,
+  excluirVistoria,
 } from "@/lib/vistoria-storage";
 import type {
   PendenciaVistoria,
@@ -222,6 +223,17 @@ export function VistoriaContent({
     }
   }
 
+  async function handleExcluirVistoria(vistoriaId: string) {
+    if (!window.confirm("Excluir esta vistoria? Essa ação não pode ser desfeita.")) return;
+    const ok = await excluirVistoria(vistoriaId);
+    if (!ok) {
+      alert("Não foi possível excluir agora. Verifique a conexão e tente novamente.");
+      return;
+    }
+    setVistorias((lista) => lista.filter((v) => v.id !== vistoriaId));
+    setAbertoId((atual) => (atual === vistoriaId ? null : atual));
+  }
+
   async function handleUpdateStatus(vistoriaId: string, itemId: string, status: StatusPendencia) {
     const vistoria = vistorias.find((v) => v.id === vistoriaId);
     if (!vistoria) return;
@@ -267,7 +279,7 @@ export function VistoriaContent({
     <>
       <PageHeader
         title="Vistoria de Obra"
-        description="Registre pendências com foto, prazo e responsável — e envie o PDF por WhatsApp para quem vai executar."
+        description="Registre pendências com foto, prazo e responsável — e envie a Atividade por WhatsApp para quem vai executar."
       />
 
       <HorizontalScrollTabs className="mb-5">
@@ -489,6 +501,12 @@ export function VistoriaContent({
               {vistorias.map((v) => {
                 const concluidas = v.itens.filter((it) => it.status === "Concluído").length;
                 const aberto = abertoId === v.id;
+                const hoje = new Date().toISOString().slice(0, 10);
+                const locais = v.itens.map((it) => it.local || "Pendência");
+                const equipesUnicas = Array.from(
+                  new Set(v.itens.map((it) => it.equipe).filter((eq): eq is string => Boolean(eq)))
+                );
+                const temAtrasado = v.itens.some((it) => statusEfetivo(it, hoje) === "Atrasado");
                 return (
                   <Card key={v.id} className="p-0">
                     <button
@@ -496,7 +514,7 @@ export function VistoriaContent({
                       onClick={() => setAbertoId(aberto ? null : v.id)}
                       className="flex w-full items-start justify-between gap-3 p-4 text-left"
                     >
-                      <div>
+                      <div className="min-w-0">
                         <h3 className="text-sm font-bold text-slate-900">
                           {v.data.split("-").reverse().join("/")} · {v.responsavelVistoria || "-"}
                         </h3>
@@ -506,6 +524,19 @@ export function VistoriaContent({
                           </span>{" "}
                           pendência(s) concluída(s)
                         </p>
+                        {locais.length > 0 && (
+                          <p className="mt-1 truncate text-xs text-slate-600">{locais.join(" · ")}</p>
+                        )}
+                        {(equipesUnicas.length > 0 || temAtrasado) && (
+                          <div className="mt-1.5 flex flex-wrap gap-1">
+                            {temAtrasado && <Badge variant="danger">Atrasado</Badge>}
+                            {equipesUnicas.map((eq) => (
+                              <Badge key={eq} variant="default">
+                                {eq}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </button>
 
@@ -523,6 +554,14 @@ export function VistoriaContent({
                         className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700"
                       >
                         WhatsApp (Imagem)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleExcluirVistoria(v.id)}
+                        aria-label="Excluir vistoria"
+                        className="rounded-lg border border-red-200 bg-white px-3 py-2 text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 size={14} />
                       </button>
                     </div>
 
