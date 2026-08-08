@@ -1,5 +1,5 @@
 import type { PendenciaVistoria, VistoriaObra } from "./vistoria-types";
-import { statusEfetivo } from "./vistoria-types";
+import { statusEfetivo, EQUIPES } from "./vistoria-types";
 
 function formatarDataBr(iso: string): string {
   if (!iso) return "-";
@@ -244,10 +244,11 @@ export async function compartilharImagemPendencia(
 }
 
 /**
- * Gera uma única imagem-resumo com todas as pendências da vistoria —
- * pensada para ser compartilhada no WhatsApp com quem vai executar o
- * serviço, sem precisar abrir um PDF. Mais rápida de abrir e olhar no
- * celular do que um PDF.
+ * Gera uma única imagem-resumo com todas as pendências da vistoria,
+ * organizadas em seções por Equipe (Elétrica, Civil, Pintura...) — assim
+ * cada equipe consegue achar rápido só a parte que é dela — pensada para
+ * ser compartilhada no WhatsApp com quem vai executar o serviço, sem
+ * precisar abrir um PDF.
  */
 export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob> {
   const W = 1080;
@@ -255,9 +256,38 @@ export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob>
   const headerH = 220;
   const itemH = 300;
   const itemGap = 28;
+  const sectionHeaderH = 64;
+  const sectionGap = 16;
   const footerH = 70;
   const itens = vistoria.itens;
-  const H = headerH + itens.length * (itemH + itemGap) + footerH;
+
+  // Agrupa as pendências por equipe (respeitando a ordem de EQUIPES),
+  // deixando as sem equipe definida por último.
+  const grupos = new Map<string, PendenciaVistoria[]>();
+  for (const item of itens) {
+    const chave = item.equipe && item.equipe.trim() ? item.equipe : "Sem equipe definida";
+    if (!grupos.has(chave)) grupos.set(chave, []);
+    grupos.get(chave)!.push(item);
+  }
+  const chaves = Array.from(grupos.keys()).sort((a, b) => {
+    if (a === "Sem equipe definida") return 1;
+    if (b === "Sem equipe definida") return -1;
+    const ia = (EQUIPES as readonly string[]).indexOf(a);
+    const ib = (EQUIPES as readonly string[]).indexOf(b);
+    if (ia === -1 && ib === -1) return a.localeCompare(b);
+    if (ia === -1) return 1;
+    if (ib === -1) return -1;
+    return ia - ib;
+  });
+
+  const H =
+    headerH +
+    24 +
+    chaves.reduce(
+      (acc, chave) => acc + sectionHeaderH + sectionGap + grupos.get(chave)!.length * (itemH + itemGap),
+      0
+    ) +
+    footerH;
 
   const canvas = document.createElement("canvas");
   canvas.width = W;
@@ -287,94 +317,107 @@ export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob>
   const hoje = new Date().toISOString().slice(0, 10);
   let y = headerH + 24;
 
-  for (const item of itens) {
-    const cardTop = y;
-    ctx.fillStyle = "#ffffff";
-    ctx.beginPath();
-    ctx.roundRect(PAD, cardTop, W - PAD * 2, itemH, 20);
-    ctx.fill();
-    ctx.strokeStyle = "#e2e8f0";
-    ctx.lineWidth = 2;
-    ctx.stroke();
+  for (const chave of chaves) {
+    const itensDoGrupo = grupos.get(chave)!;
 
-    const thumbSize = 220;
-    const thumbX = PAD + 20;
-    const thumbY = cardTop + 20;
-    if (item.foto) {
-      try {
-        const img = await carregarImagem(item.foto);
-        ctx.save();
-        ctx.beginPath();
-        ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
-        ctx.clip();
-        desenharImagemCover(ctx, img, thumbX, thumbY, thumbSize, thumbSize);
-        ctx.restore();
-      } catch {
+    // Cabeçalho da seção — nome da equipe e quantas pendências ela tem.
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.roundRect(PAD, y, W - PAD * 2, sectionHeaderH, 14);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 30px sans-serif";
+    ctx.fillText(`${chave} · ${itensDoGrupo.length} pendência(s)`, PAD + 24, y + 42);
+    y += sectionHeaderH + sectionGap;
+
+    for (const item of itensDoGrupo) {
+      const cardTop = y;
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.roundRect(PAD, cardTop, W - PAD * 2, itemH, 20);
+      ctx.fill();
+      ctx.strokeStyle = "#e2e8f0";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      const thumbSize = 220;
+      const thumbX = PAD + 20;
+      const thumbY = cardTop + 20;
+      if (item.foto) {
+        try {
+          const img = await carregarImagem(item.foto);
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
+          ctx.clip();
+          desenharImagemCover(ctx, img, thumbX, thumbY, thumbSize, thumbSize);
+          ctx.restore();
+        } catch {
+          ctx.fillStyle = "#e2e8f0";
+          ctx.beginPath();
+          ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
+          ctx.fill();
+        }
+      } else {
         ctx.fillStyle = "#e2e8f0";
         ctx.beginPath();
         ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
         ctx.fill();
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = "600 22px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Sem foto", thumbX + thumbSize / 2, thumbY + thumbSize / 2);
+        ctx.textAlign = "left";
       }
-    } else {
-      ctx.fillStyle = "#e2e8f0";
-      ctx.beginPath();
-      ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
-      ctx.fill();
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "600 22px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("Sem foto", thumbX + thumbSize / 2, thumbY + thumbSize / 2);
-      ctx.textAlign = "left";
-    }
 
-    const textX = thumbX + thumbSize + 28;
-    const textW = W - PAD - 20 - textX;
-    let ty = cardTop + 50;
+      const textX = thumbX + thumbSize + 28;
+      const textW = W - PAD - 20 - textX;
+      let ty = cardTop + 50;
 
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 34px sans-serif";
-    const linhasLocal = quebrarTexto(ctx, item.local || "Pendência", textW);
-    ctx.fillText(linhasLocal[0] || "Pendência", textX, ty);
-    ty += 44;
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 34px sans-serif";
+      const linhasLocal = quebrarTexto(ctx, item.local || "Pendência", textW);
+      ctx.fillText(linhasLocal[0] || "Pendência", textX, ty);
+      ty += 44;
 
-    const status = statusEfetivo(item, hoje);
-    ctx.font = "bold 22px sans-serif";
-    let bx = textX;
-    const badgesResumo = [
-      ...(item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
-      { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
-      { texto: status, cor: corStatus(status) },
-    ];
-    for (const b of badgesResumo) {
-      const largura = ctx.measureText(b.texto).width + 32;
-      ctx.fillStyle = b.cor;
-      ctx.beginPath();
-      ctx.roundRect(bx, ty - 24, largura, 40, 20);
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.fillText(b.texto, bx + 16, ty + 3);
-      bx += largura + 12;
-    }
-    ty += 44;
+      const status = statusEfetivo(item, hoje);
+      ctx.font = "bold 22px sans-serif";
+      let bx = textX;
+      const badgesResumo = [
+        { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
+        { texto: status, cor: corStatus(status) },
+      ];
+      for (const b of badgesResumo) {
+        const largura = ctx.measureText(b.texto).width + 32;
+        ctx.fillStyle = b.cor;
+        ctx.beginPath();
+        ctx.roundRect(bx, ty - 24, largura, 40, 20);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(b.texto, bx + 16, ty + 3);
+        bx += largura + 12;
+      }
+      ty += 44;
 
-    ctx.fillStyle = "#334155";
-    ctx.font = "400 26px sans-serif";
-    const linhasDesc = quebrarTexto(ctx, item.descricao || "-", textW);
-    for (const linha of linhasDesc.slice(0, 2)) {
-      ctx.fillText(linha, textX, ty);
+      ctx.fillStyle = "#334155";
+      ctx.font = "400 26px sans-serif";
+      const linhasDesc = quebrarTexto(ctx, item.descricao || "-", textW);
+      for (const linha of linhasDesc.slice(0, 2)) {
+        ctx.fillText(linha, textX, ty);
+        ty += 32;
+      }
+      ty += 8;
+
+      ctx.font = "bold 26px sans-serif";
+      ctx.fillStyle = status === "Atrasado" ? "#dc2626" : "#0f172a";
+      ctx.fillText(`Prazo: ${item.prazo ? formatarDataBr(item.prazo) : "a definir"}`, textX, ty);
       ty += 32;
+      ctx.font = "400 24px sans-serif";
+      ctx.fillStyle = "#475569";
+      ctx.fillText(`Responsável: ${item.responsavel || "-"}`, textX, ty);
+
+      y += itemH + itemGap;
     }
-    ty += 8;
-
-    ctx.font = "bold 26px sans-serif";
-    ctx.fillStyle = status === "Atrasado" ? "#dc2626" : "#0f172a";
-    ctx.fillText(`Prazo: ${item.prazo ? formatarDataBr(item.prazo) : "a definir"}`, textX, ty);
-    ty += 32;
-    ctx.font = "400 24px sans-serif";
-    ctx.fillStyle = "#475569";
-    ctx.fillText(`Responsável: ${item.responsavel || "-"}`, textX, ty);
-
-    y += itemH + itemGap;
   }
 
   ctx.fillStyle = "#94a3b8";
