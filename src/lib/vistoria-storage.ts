@@ -1,36 +1,48 @@
 import type { ContadoresVistoria, VistoriaObra } from "./vistoria-types";
 
-function chave(obraId: string): string {
-  return `campo:vistorias:${obraId}`;
-}
-
-export function getVistorias(obraId: string): VistoriaObra[] {
-  if (typeof window === "undefined") return [];
+export async function getVistorias(obraId: string): Promise<VistoriaObra[]> {
   try {
-    const raw = window.localStorage.getItem(chave(obraId));
-    return raw ? (JSON.parse(raw) as VistoriaObra[]) : [];
+    const res = await fetch(`/api/vistorias?obraId=${encodeURIComponent(obraId)}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { vistorias?: VistoriaObra[] };
+    return data.vistorias ?? [];
   } catch {
     return [];
   }
 }
 
-export function saveVistorias(obraId: string, lista: VistoriaObra[]): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(chave(obraId), JSON.stringify(lista));
+export async function salvarNovaVistoria(
+  obraId: string,
+  vistoria: VistoriaObra
+): Promise<boolean> {
+  try {
+    const res = await fetch("/api/vistorias", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(vistoria),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
-export function salvarNovaVistoria(obraId: string, vistoria: VistoriaObra): void {
-  const lista = getVistorias(obraId);
-  lista.unshift(vistoria);
-  saveVistorias(obraId, lista);
-}
-
-export function atualizarVistoria(obraId: string, vistoria: VistoriaObra): void {
-  const lista = getVistorias(obraId);
-  const idx = lista.findIndex((v) => v.id === vistoria.id);
-  if (idx === -1) return;
-  lista[idx] = vistoria;
-  saveVistorias(obraId, lista);
+export async function atualizarVistoria(
+  obraId: string,
+  vistoria: VistoriaObra
+): Promise<boolean> {
+  try {
+    const res = await fetch(`/api/vistorias/${encodeURIComponent(vistoria.id)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(vistoria),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export function contarPendencias(vistorias: VistoriaObra[]): ContadoresVistoria {
@@ -42,14 +54,14 @@ export function contarPendencias(vistorias: VistoriaObra[]): ContadoresVistoria 
     atrasado: 0,
   };
 
-for (const vistoria of vistorias) {
-  for (const item of vistoria.itens) {
-    if (item.status === "Concluído") contadores.concluido++;
-    else if (item.prazo && item.prazo < hoje) contadores.atrasado++;
-    else if (item.status === "Em execução") contadores.execucao++;
-    else contadores.pendente++;
+  for (const vistoria of vistorias) {
+    for (const item of vistoria.itens) {
+      if (item.status === "Concluído") contadores.concluido++;
+      else if (item.prazo && item.prazo < hoje) contadores.atrasado++;
+      else if (item.status === "Em execução") contadores.execucao++;
+      else contadores.pendente++;
+    }
   }
-}
 
-return contadores;
+  return contadores;
 }
