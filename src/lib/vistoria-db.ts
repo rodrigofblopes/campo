@@ -75,3 +75,12 @@ export async function atualizarVistoriaDb(v: VistoriaObra): Promise<void> {
     WHERE id = ${v.id}
   `;
 }
+
+export async function excluirVistoriaDb(id: string): Promise<void> {
+  await ensureTable();
+  const sql = getSql();
+  await sql`
+    DELETE FROM vistorias
+    WHERE id = ${id}
+  `;
+}
