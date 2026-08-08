@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Camera, Plus, Send, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
@@ -107,12 +107,23 @@ export function VistoriaContent({
   const [salvando, setSalvando] = useState(false);
 
   // ---- histórico ----
-  const [vistorias, setVistorias] = useState<VistoriaObra[]>(() => getVistorias(obraId));
+  const [vistorias, setVistorias] = useState<VistoriaObra[]>([]);
   const [abertoId, setAbertoId] = useState<string | null>(null);
 
-  function abrirHistorico() {
-    setVistorias(getVistorias(obraId));
+  useEffect(() => {
+    let ativo = true;
+    getVistorias(obraId).then((lista) => {
+      if (ativo) setVistorias(lista);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [obraId]);
+
+  async function abrirHistorico() {
     setAba("historico");
+    const lista = await getVistorias(obraId);
+    setVistorias(lista);
   }
 
   const contadores = useMemo(() => contarPendencias(vistorias), [vistorias]);
@@ -167,9 +178,10 @@ export function VistoriaContent({
       const vistoria = montarVistoria();
       const doc = gerarPDFVistoria(vistoria);
       doc.save(nomeArquivoVistoria(vistoria));
-      salvarNovaVistoria(obraId, vistoria);
+      const salvo = await salvarNovaVistoria(obraId, vistoria);
+      if (!salvo) alert("PDF gerado, mas não foi possível salvar no histórico (sem conexão?).");
       limparFormulario();
-      setVistorias(getVistorias(obraId));
+      setVistorias(await getVistorias(obraId));
       setAba("historico");
     } finally {
       setSalvando(false);
@@ -182,17 +194,18 @@ export function VistoriaContent({
     setSalvando(true);
     try {
       const vistoria = montarVistoria();
-      salvarNovaVistoria(obraId, vistoria);
+      const salvo = await salvarNovaVistoria(obraId, vistoria);
+      if (!salvo) alert("Não foi possível salvar no histórico (sem conexão?). O PDF ainda será compartilhado.");
       await compartilharVistoria(vistoria);
       limparFormulario();
-      setVistorias(getVistorias(obraId));
+      setVistorias(await getVistorias(obraId));
       setAba("historico");
     } finally {
       setSalvando(false);
     }
   }
 
-  function handleUpdateStatus(vistoriaId: string, itemId: string, status: StatusPendencia) {
+  async function handleUpdateStatus(vistoriaId: string, itemId: string, status: StatusPendencia) {
     const vistoria = vistorias.find((v) => v.id === vistoriaId);
     if (!vistoria) return;
     const atualizada: VistoriaObra = {
@@ -207,8 +220,8 @@ export function VistoriaContent({
           : it
       ),
     };
-    atualizarVistoria(obraId, atualizada);
     setVistorias((lista) => lista.map((v) => (v.id === vistoriaId ? atualizada : v)));
+    await atualizarVistoria(obraId, atualizada);
   }
 
   async function handleFotoConclusao(vistoriaId: string, itemId: string, file: File | undefined) {
@@ -229,8 +242,8 @@ export function VistoriaContent({
           : it
       ),
     };
-    atualizarVistoria(obraId, atualizada);
     setVistorias((lista) => lista.map((v) => (v.id === vistoriaId ? atualizada : v)));
+    await atualizarVistoria(obraId, atualizada);
   }
 
   return (
