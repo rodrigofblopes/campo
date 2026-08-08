@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { atualizarVistoriaDb } from "@/lib/vistoria-db";
+import { atualizarVistoriaDb, excluirVistoriaDb } from "@/lib/vistoria-db";
 import type { VistoriaObra } from "@/lib/vistoria-types";
 
 export async function PATCH(
@@ -17,5 +17,19 @@ export async function PATCH(
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: "Erro ao atualizar vistoria" }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  try {
+    await excluirVistoriaDb(id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error(err);
+    return NextResponse.json({ error: "Erro ao excluir vistoria" }, { status: 500 });
   }
 }
