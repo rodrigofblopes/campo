@@ -6,6 +6,7 @@ export interface PendenciaVistoria {
   local: string;
   responsavel: string;
   prioridade: PrioridadePendencia;
+  inicioPrevisto: string; // yyyy-mm-dd
   prazo: string; // yyyy-mm-dd
 descricao: string;
   foto: string | null; // dataURL (foto do problema)
