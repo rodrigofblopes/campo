@@ -205,7 +205,7 @@ export function VistoriaContent({
       const doc = gerarPDFVistoria(vistoria);
       doc.save(nomeArquivoVistoria(vistoria));
       const salvo = await salvarNovaVistoria(obraId, vistoria);
-      if (!salvo) alert("PDF gerado, mas não foi possível salvar no histórico (sem conexão?).");
+      if (!salvo) alert("PDF gerado. Sem conexão agora — vamos tentar salvar no histórico automaticamente assim que possível.");
       limparFormulario();
       setVistorias(await getVistorias(obraId));
       setAba("historico");
@@ -221,7 +221,7 @@ export function VistoriaContent({
     try {
       const vistoria = montarVistoria();
       const salvo = await salvarNovaVistoria(obraId, vistoria);
-      if (!salvo) alert("Não foi possível salvar no histórico (sem conexão?). O PDF ainda será compartilhado.");
+      if (!salvo) alert("Sem conexão agora — vamos tentar salvar no histórico automaticamente depois. O PDF será compartilhado normalmente.");
       await compartilharVistoria(vistoria);
       limparFormulario();
       setVistorias(await getVistorias(obraId));
@@ -412,7 +412,6 @@ export function VistoriaContent({
                     <input
                       type="file"
                       accept="image/*"
-                      capture="environment"
                       className="hidden"
                       onChange={(e) => onFoto(item.id, e.target.files?.[0])}
                     />
@@ -570,7 +569,6 @@ export function VistoriaContent({
                                   <input
                                     type="file"
                                     accept="image/*"
-                                    capture="environment"
                                     className="hidden"
                                     onChange={(e) => handleFotoConclusao(v.id, item.id, e.target.files?.[0])}
                                   />
