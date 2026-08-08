@@ -40,13 +40,39 @@ function novaPendenciaDraft(): PendenciaVistoria {
   };
 }
 
-function lerArquivoComoDataUrl(file: File): Promise<string> {
+function lerArquivoComoDataUrlBruto(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+// Corrige a rotação EXIF da foto (comum em celulares) e reduz o tamanho,
+// desenhando a imagem já orientada corretamente em um canvas.
+async function lerArquivoComoDataUrl(file: File): Promise<string> {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const maxDim = 1600;
+    let largura = bitmap.width;
+    let altura = bitmap.height;
+    if (largura > maxDim || altura > maxDim) {
+      const escala = maxDim / Math.max(largura, altura);
+      largura = Math.round(largura * escala);
+      altura = Math.round(altura * escala);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = largura;
+    canvas.height = altura;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("sem contexto 2d");
+    ctx.drawImage(bitmap, 0, 0, largura, altura);
+    bitmap.close();
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    return lerArquivoComoDataUrlBruto(file);
+  }
 }
 
 function badgeVariant(status: string): "default" | "success" | "warning" | "danger" {
