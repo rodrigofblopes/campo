@@ -62,6 +62,15 @@ function corStatus(status: string): string {
   return "#d97706";
 }
 
+function slugify(texto: string): string {
+  return (texto || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 /**
  * Gera um cartão-imagem simples e visual de uma pendência (foto grande,
  * local em destaque, prazo e responsável) — pensado para ser aberto no
@@ -134,6 +143,7 @@ export async function gerarImagemPendencia(
   const hoje = new Date().toISOString().slice(0, 10);
   const status = statusEfetivo(item, hoje);
   const badges = [
+    ...(item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
     { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
     { texto: status, cor: corStatus(status) },
   ];
@@ -182,13 +192,7 @@ export async function gerarImagemPendencia(
 }
 
 export function nomeArquivoImagemPendencia(item: PendenciaVistoria): string {
-  const slug = (item.local || "pendencia")
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return `pendencia-${slug}.jpg`;
+  return `pendencia-${slugify(item.local || "pendencia")}.jpg`;
 }
 
 /**
@@ -234,6 +238,204 @@ export async function compartilharImagemPendencia(
   window.open(
     `https://wa.me/?text=${encodeURIComponent(
       `${item.local || "Pendência"} — ${vistoria.obraNome}. Confira a imagem baixada.`
+    )}`,
+    "_blank"
+  );
+}
+
+/**
+ * Gera uma única imagem-resumo com todas as pendências da vistoria —
+ * pensada para ser compartilhada no WhatsApp com quem vai executar o
+ * serviço, sem precisar abrir um PDF. Mais rápida de abrir e olhar no
+ * celular do que um PDF.
+ */
+export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob> {
+  const W = 1080;
+  const PAD = 48;
+  const headerH = 220;
+  const itemH = 300;
+  const itemGap = 28;
+  const footerH = 70;
+  const itens = vistoria.itens;
+  const H = headerH + itens.length * (itemH + itemGap) + footerH;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = W;
+  canvas.height = Math.max(H, 460);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("sem contexto 2d");
+
+  ctx.fillStyle = "#f8fafc";
+  ctx.fillRect(0, 0, W, canvas.height);
+
+  ctx.fillStyle = "#2563eb";
+  ctx.fillRect(0, 0, W, headerH);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "bold 52px sans-serif";
+  ctx.fillText("CAMPO", PAD, 78);
+  ctx.font = "bold 28px sans-serif";
+  ctx.fillText("VISTORIA DE OBRA", PAD, 116);
+  ctx.font = "600 32px sans-serif";
+  ctx.fillText(vistoria.obraNome || "-", PAD, 164);
+  ctx.font = "400 24px sans-serif";
+  ctx.fillText(
+    `${formatarDataBr(vistoria.data)} · Responsável: ${vistoria.responsavelVistoria || "-"} · ${itens.length} pendência(s)`,
+    PAD,
+    200
+  );
+
+  const hoje = new Date().toISOString().slice(0, 10);
+  let y = headerH + 24;
+
+  for (const item of itens) {
+    const cardTop = y;
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath();
+    ctx.roundRect(PAD, cardTop, W - PAD * 2, itemH, 20);
+    ctx.fill();
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const thumbSize = 220;
+    const thumbX = PAD + 20;
+    const thumbY = cardTop + 20;
+    if (item.foto) {
+      try {
+        const img = await carregarImagem(item.foto);
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
+        ctx.clip();
+        desenharImagemCover(ctx, img, thumbX, thumbY, thumbSize, thumbSize);
+        ctx.restore();
+      } catch {
+        ctx.fillStyle = "#e2e8f0";
+        ctx.beginPath();
+        ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = "#e2e8f0";
+      ctx.beginPath();
+      ctx.roundRect(thumbX, thumbY, thumbSize, thumbSize, 16);
+      ctx.fill();
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "600 22px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("Sem foto", thumbX + thumbSize / 2, thumbY + thumbSize / 2);
+      ctx.textAlign = "left";
+    }
+
+    const textX = thumbX + thumbSize + 28;
+    const textW = W - PAD - 20 - textX;
+    let ty = cardTop + 50;
+
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 34px sans-serif";
+    const linhasLocal = quebrarTexto(ctx, item.local || "Pendência", textW);
+    ctx.fillText(linhasLocal[0] || "Pendência", textX, ty);
+    ty += 44;
+
+    const status = statusEfetivo(item, hoje);
+    ctx.font = "bold 22px sans-serif";
+    let bx = textX;
+    const badgesResumo = [
+      ...(item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
+      { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
+      { texto: status, cor: corStatus(status) },
+    ];
+    for (const b of badgesResumo) {
+      const largura = ctx.measureText(b.texto).width + 32;
+      ctx.fillStyle = b.cor;
+      ctx.beginPath();
+      ctx.roundRect(bx, ty - 24, largura, 40, 20);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(b.texto, bx + 16, ty + 3);
+      bx += largura + 12;
+    }
+    ty += 44;
+
+    ctx.fillStyle = "#334155";
+    ctx.font = "400 26px sans-serif";
+    const linhasDesc = quebrarTexto(ctx, item.descricao || "-", textW);
+    for (const linha of linhasDesc.slice(0, 2)) {
+      ctx.fillText(linha, textX, ty);
+      ty += 32;
+    }
+    ty += 8;
+
+    ctx.font = "bold 26px sans-serif";
+    ctx.fillStyle = status === "Atrasado" ? "#dc2626" : "#0f172a";
+    ctx.fillText(`Prazo: ${item.prazo ? formatarDataBr(item.prazo) : "a definir"}`, textX, ty);
+    ty += 32;
+    ctx.font = "400 24px sans-serif";
+    ctx.fillStyle = "#475569";
+    ctx.fillText(`Responsável: ${item.responsavel || "-"}`, textX, ty);
+
+    y += itemH + itemGap;
+  }
+
+  ctx.fillStyle = "#94a3b8";
+  ctx.font = "400 22px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("Gerado pelo app Campo · Steel Frame", W / 2, canvas.height - 30);
+  ctx.textAlign = "left";
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("falha ao gerar imagem"))),
+      "image/jpeg",
+      0.9
+    );
+  });
+}
+
+export function nomeArquivoImagemVistoria(vistoria: VistoriaObra): string {
+  return `vistoria-${slugify(vistoria.obraNome || "vistoria")}-${vistoria.data || ""}.jpg`;
+}
+
+/**
+ * Compartilha a imagem-resumo da vistoria inteira via Web Share API
+ * (abre direto o seletor de apps do celular, incluindo WhatsApp). Se o
+ * navegador não suportar compartilhar arquivos, baixa a imagem e abre o
+ * WhatsApp Web com um texto avisando para anexar a imagem baixada.
+ */
+export async function compartilharImagemVistoria(vistoria: VistoriaObra): Promise<void> {
+  const blob = await gerarImagemVistoria(vistoria);
+  const fileName = nomeArquivoImagemVistoria(vistoria);
+  const file = new File([blob], fileName, { type: "image/jpeg" });
+
+  const nav = navigator as Navigator & {
+    canShare?: (data?: ShareData) => boolean;
+    share?: (data: ShareData) => Promise<void>;
+  };
+
+  if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
+    try {
+      await nav.share({
+        files: [file],
+        title: "Vistoria de Obra",
+        text: `Vistoria - ${vistoria.obraNome}`,
+      });
+      return;
+    } catch {
+      // usuário cancelou o compartilhamento — cai no fallback abaixo
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(
+      `Vistoria - ${vistoria.obraNome}. Confira a imagem baixada.`
     )}`,
     "_blank"
   );
