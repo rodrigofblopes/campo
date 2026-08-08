@@ -132,6 +132,18 @@ export async function atualizarVistoria(
   return false;
 }
 
+// Remove qualquer envio pendente dessa vistoria (não faz sentido reenviar
+// algo que acabou de ser excluído) e tenta excluir no servidor.
+export async function excluirVistoria(id: string): Promise<boolean> {
+  const fila = lerFila().filter((p) => p.vistoria.id !== id);
+  salvarFila(fila);
+
+  const res = await fetchComTentativas(`/api/vistorias/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+  return !!(res && res.ok);
+}
+
 export function contarPendencias(vistorias: VistoriaObra[]): ContadoresVistoria {
   const hoje = new Date().toISOString().slice(0, 10);
   const contadores: ContadoresVistoria = {
