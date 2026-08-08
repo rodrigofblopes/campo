@@ -6,13 +6,13 @@ export interface PendenciaVistoria {
   local: string;
   responsavel: string;
   prioridade: PrioridadePendencia;
-  inicioPrevisto: string; // yyyy-mm-dd
+  inicioPrevisto?: string; // yyyy-mm-dd
   prazo: string; // yyyy-mm-dd
-descricao: string;
+  descricao: string;
   foto: string | null; // dataURL (foto do problema)
-status: StatusPendencia;
+  status: StatusPendencia;
   fotoDepois: string | null; // dataURL (foto de conclusão)
-concluidoEm: string | null; // ISO datetime
+  concluidoEm: string | null; // ISO datetime
 }
 
 export interface VistoriaObra {
@@ -21,8 +21,8 @@ export interface VistoriaObra {
   obraNome: string;
   responsavelVistoria: string;
   data: string; // yyyy-mm-dd
-criadoEm: string; // ISO datetime
-itens: PendenciaVistoria[];
+  criadoEm: string; // ISO datetime
+  itens: PendenciaVistoria[];
 }
 
 export interface ContadoresVistoria {
