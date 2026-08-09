@@ -12,6 +12,27 @@ function formatarDataBr(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+// Formata o prazo como "dd/mm/aaaa (Dia da semana)" — mesmo padrão usado no
+// app, pra quem recebe a imagem no WhatsApp já saber de cabeça em que dia
+// da semana vence.
+function formatarDataComDia(iso: string): string {
+  if (!iso) return "-";
+  const [y, m, d] = iso.split("-").map(Number);
+  const dataBr = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+  const data = new Date(y, m - 1, d);
+  return `${dataBr} (${DIAS_SEMANA[data.getDay()]})`;
+}
+
 function carregarImagem(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -170,7 +191,7 @@ export async function gerarImagemPendencia(
 
   ctx.font = "bold 38px sans-serif";
   ctx.fillStyle = status === "Atrasado" ? "#dc2626" : "#0f172a";
-  ctx.fillText(`Prazo: ${item.prazo ? formatarDataBr(item.prazo) : "a definir"}`, 48, y);
+  ctx.fillText(`Prazo: ${item.prazo ? formatarDataComDia(item.prazo) : "a definir"}`, 48, y);
   y += 50;
   ctx.font = "500 32px sans-serif";
   ctx.fillStyle = "#334155";
@@ -398,7 +419,7 @@ async function gerarImagemBase(
 
     ctx.font = "bold 26px sans-serif";
     ctx.fillStyle = status === "Atrasado" ? "#dc2626" : "#0f172a";
-    ctx.fillText(`Prazo: ${item.prazo ? formatarDataBr(item.prazo) : "a definir"}`, textX, ty);
+    ctx.fillText(`Prazo: ${item.prazo ? formatarDataComDia(item.prazo) : "a definir"}`, textX, ty);
     ty += 32;
     ctx.font = "400 24px sans-serif";
     ctx.fillStyle = "#475569";

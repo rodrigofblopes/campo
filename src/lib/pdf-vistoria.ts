@@ -8,6 +8,26 @@ function formatarData(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+// Formata o prazo como "dd/mm/aaaa (Dia da semana)" — mesmo padrão usado no
+// app, pra quem recebe o PDF já saber de cabeça em que dia da semana vence.
+function formatarDataComDia(iso: string): string {
+  if (!iso) return "-";
+  const [y, m, d] = iso.split("-").map(Number);
+  const dataBr = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+  const data = new Date(y, m - 1, d);
+  return `${dataBr} (${DIAS_SEMANA[data.getDay()]})`;
+}
+
 function checkPageBreak(doc: jsPDF, y: number, needed: number, pageH: number): number {
   if (y + needed > pageH - 15) {
     doc.addPage();
@@ -49,7 +69,7 @@ function textoFallback(doc: jsPDF, item: PendenciaVistoria, y: number, pageW: nu
   doc.setFont("helvetica", "bold");
   doc.text("Prazo:", margem, y + 19);
   doc.setFont("helvetica", "normal");
-  doc.text(item.prazo ? formatarData(item.prazo) : "-", margem + 15, y + 19);
+  doc.text(item.prazo ? formatarDataComDia(item.prazo) : "-", margem + 15, y + 19);
   doc.setFont("helvetica", "bold");
   doc.text("Descrição:", margem, y + 26);
   doc.setFont("helvetica", "normal");
@@ -106,7 +126,7 @@ export function gerarPDFVistoria(vistoria: VistoriaObra): jsPDF {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text(
-      `Pendência ${i + 1} — ${statusEfetivo(item, hoje)} — Prioridade ${item.prioridade}${item.equipe ? ` — ${item.equipe}` : ""}`,
+      `Pendência ${i + 1} — ${statusEfetivo(item, hoje)}${item.equipe ? ` — ${item.equipe}` : ""}`,
       margem + 2,
       y
     );
@@ -134,7 +154,7 @@ export function gerarPDFVistoria(vistoria: VistoriaObra): jsPDF {
         doc.setFont("helvetica", "bold");
         doc.text("Prazo:", textX, y + 19);
         doc.setFont("helvetica", "normal");
-        doc.text(item.prazo ? formatarData(item.prazo) : "-", textX + 15, y + 19);
+        doc.text(item.prazo ? formatarDataComDia(item.prazo) : "-", textX + 15, y + 19);
         doc.setFont("helvetica", "bold");
         doc.text("Descrição:", textX, y + 26);
         doc.setFont("helvetica", "normal");
