@@ -5,7 +5,7 @@ import { Camera, ChevronLeft, ChevronRight, Plus, Send, Trash2, X } from "lucide
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
-import { compartilharImagemVistoria, compartilharImagemEquipe } from "@/lib/image-vistoria";
+import { compartilharImagemVistoria, compartilharImagemFiltrada } from "@/lib/image-vistoria";
 import {
   contarPendencias,
   getVistorias,
@@ -143,6 +143,7 @@ export function VistoriaContent({
 
   // ---- PCP semanal ----
   const [semanaOffset, setSemanaOffset] = useState(0);
+  const [itemSelecionado, setItemSelecionado] = useState<PendenciaVistoria | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -182,6 +183,14 @@ export function VistoriaContent({
       })
       .filter(({ itensExibidos }) => !filtroAtivo || itensExibidos.length > 0);
   }, [vistorias, filtroEquipe, filtroStatus, filtroAtivo]);
+
+  // Todas as pendências que batem com o filtro atual, de todas as
+  // vistorias juntas — usada para mandar uma única imagem com o recorte
+  // que está sendo visto no histórico (equipe e/ou situação).
+  const itensFiltradosGlobal = useMemo(
+    () => vistoriasFiltradas.flatMap(({ itensExibidos }) => itensExibidos),
+    [vistoriasFiltradas]
+  );
 
   // Quantas pendências em aberto (não concluídas) cada equipe tem agora,
   // somando todas as vistorias — ajuda a balancear o time e decidir quem
@@ -628,6 +637,20 @@ export function VistoriaContent({
             </div>
           )}
 
+          {itensFiltradosGlobal.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                compartilharImagemFiltrada(obraMeta.nome, itensFiltradosGlobal, filtroEquipe, filtroStatus)
+              }
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
+            >
+              <Send size={16} />
+              WhatsApp (Imagem) · {itensFiltradosGlobal.length} tarefa{itensFiltradosGlobal.length > 1 ? "s" : ""}
+              {filtroAtivo ? " filtrada" + (itensFiltradosGlobal.length > 1 ? "s" : "") : ""}
+            </button>
+          )}
+
           {vistorias.length === 0 ? (
             <Card className="py-10 text-center text-sm text-slate-500">
               Nenhuma vistoria registrada ainda para esta obra.
@@ -704,34 +727,6 @@ export function VistoriaContent({
                         <Trash2 size={14} />
                       </button>
                     </div>
-
-                    {equipesUnicas.length > 0 && (
-                      <div className="px-4 pb-4">
-                        <label className="block">
-                          <span className="text-xs font-medium text-slate-500">
-                            Enviar só as tarefas de uma equipe
-                          </span>
-                          <select
-                            defaultValue=""
-                            onChange={(e) => {
-                              const equipeEscolhida = e.target.value;
-                              if (equipeEscolhida) {
-                                compartilharImagemEquipe(v, equipeEscolhida);
-                                e.target.value = "";
-                              }
-                            }}
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          >
-                            <option value="">Selecione a equipe...</option>
-                            {equipesUnicas.map((eq) => (
-                              <option key={eq} value={eq}>
-                                {eq}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                    )}
 
                     {aberto && (
                       <div className="space-y-2 border-t border-slate-100 p-4">
@@ -872,13 +867,15 @@ export function VistoriaContent({
                       >
                         <div className="flex flex-col gap-1">
                           {itensDia.map((it) => (
-                            <span
+                            <button
                               key={it.id}
+                              type="button"
+                              onClick={() => setItemSelecionado(it)}
                               title={it.local || it.descricao}
-                              className="truncate rounded bg-amber-50 px-1.5 py-1 text-[10px] font-medium text-amber-700"
+                              className="truncate rounded bg-amber-50 px-1.5 py-1 text-left text-[10px] font-medium text-amber-700 hover:bg-amber-100"
                             >
                               {it.local || it.descricao}
-                            </span>
+                            </button>
                           ))}
                         </div>
                       </td>
@@ -905,13 +902,15 @@ export function VistoriaContent({
                       >
                         <div className="flex flex-col gap-1">
                           {itensDia.map((it) => (
-                            <span
+                            <button
                               key={it.id}
+                              type="button"
+                              onClick={() => setItemSelecionado(it)}
                               title={it.local || it.descricao}
-                              className="truncate rounded bg-emerald-50 px-1.5 py-1 text-[10px] font-medium text-emerald-700"
+                              className="truncate rounded bg-emerald-50 px-1.5 py-1 text-left text-[10px] font-medium text-emerald-700 hover:bg-emerald-100"
                             >
                               {it.local || it.descricao}
-                            </span>
+                            </button>
                           ))}
                         </div>
                       </td>
@@ -926,6 +925,73 @@ export function VistoriaContent({
             <p className="mt-3 text-center text-xs text-slate-400">
               Nenhuma pendência com prazo nesta semana.
             </p>
+          )}
+
+          {itemSelecionado && (
+            <div
+              className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+              onClick={() => setItemSelecionado(null)}
+            >
+              <div
+                className="w-full max-w-md rounded-t-2xl bg-white p-5 sm:rounded-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {itemSelecionado.local || "Pendência"}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setItemSelecionado(null)}
+                    aria-label="Fechar"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {itemSelecionado.equipe && <Badge variant="default">{itemSelecionado.equipe}</Badge>}
+                  <Badge variant="default">Prioridade {itemSelecionado.prioridade}</Badge>
+                  <Badge variant={badgeVariant(statusEfetivo(itemSelecionado, hojeISO))}>
+                    {statusEfetivo(itemSelecionado, hojeISO)}
+                  </Badge>
+                </div>
+
+                <p className="mb-3 text-sm text-slate-600">{itemSelecionado.descricao || "-"}</p>
+
+                <div className="mb-3 space-y-1 text-xs text-slate-500">
+                  <p>
+                    Prazo:{" "}
+                    {itemSelecionado.prazo
+                      ? itemSelecionado.prazo.split("-").reverse().join("/")
+                      : "a definir"}
+                  </p>
+                  <p>Responsável: {itemSelecionado.responsavel || "-"}</p>
+                </div>
+
+                {(itemSelecionado.foto || itemSelecionado.fotoDepois) && (
+                  <div className="flex gap-2">
+                    {itemSelecionado.foto && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={itemSelecionado.foto}
+                        alt="Antes"
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
+                    )}
+                    {itemSelecionado.fotoDepois && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={itemSelecionado.fotoDepois}
+                        alt="Depois"
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </>
       )}
