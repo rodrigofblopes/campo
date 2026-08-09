@@ -243,21 +243,31 @@ export async function compartilharImagemPendencia(
   );
 }
 
+interface OpcoesImagemBase {
+  /** Texto do selo no cabeçalho (ex: "Equipe: Elétrica" ou "Filtro: Pendente"). */
+  subtitulo?: string;
+  /** Esconde o badge de equipe em cada card — usado quando o subtítulo já deixa a equipe clara. */
+  ocultarBadgeEquipe?: boolean;
+}
+
 /**
  * Desenha a imagem-resumo (cabeçalho + cards das pendências) num canvas.
- * Usada tanto pela imagem completa da vistoria quanto pela imagem
- * filtrada de uma única equipe — a diferença é só a lista de itens e o
- * subtítulo opcional (nome da equipe) exibido no cabeçalho.
+ * Usada pela imagem completa da vistoria, pela imagem de uma única
+ * equipe e pela imagem de tarefas filtradas — a diferença é só a lista
+ * de itens e o subtítulo opcional exibido no cabeçalho.
  */
 async function gerarImagemBase(
   vistoria: VistoriaObra,
   itens: PendenciaVistoria[],
-  subtituloEquipe?: string
+  opcoes: OpcoesImagemBase = {}
 ): Promise<Blob> {
+  const { subtitulo, ocultarBadgeEquipe } = opcoes;
   const W = 1080;
   const PAD = 48;
-  const headerH = subtituloEquipe ? 260 : 220;
-  const itemH = 300;
+  const headerH = subtitulo ? 260 : 220;
+  // Foto do serviço um pouco maior nos cards — facilita entender de longe
+  // qual é a atividade só olhando a miniatura no WhatsApp.
+  const itemH = 340;
   const itemGap = 28;
   const footerH = 70;
   const H = headerH + itens.length * (itemH + itemGap) + footerH;
@@ -281,17 +291,17 @@ async function gerarImagemBase(
   ctx.font = "600 32px sans-serif";
   ctx.fillText(vistoria.obraNome || "-", PAD, 164);
 
-  if (subtituloEquipe) {
-    // Selo com o nome da equipe em destaque — deixa claro pra quem abrir
-    // a imagem que ali só tem as tarefas daquela equipe.
+  if (subtitulo) {
+    // Selo com o filtro em destaque — deixa claro pra quem abrir a
+    // imagem quais tarefas estão ali (equipe, situação, ou os dois).
     ctx.font = "bold 26px sans-serif";
-    const larguraSelo = ctx.measureText(`Equipe: ${subtituloEquipe}`).width + 40;
+    const larguraSelo = ctx.measureText(subtitulo).width + 40;
     ctx.fillStyle = "#0891b2";
     ctx.beginPath();
     ctx.roundRect(PAD, 178, larguraSelo, 44, 22);
     ctx.fill();
     ctx.fillStyle = "#ffffff";
-    ctx.fillText(`Equipe: ${subtituloEquipe}`, PAD + 20, 208);
+    ctx.fillText(subtitulo, PAD + 20, 208);
     ctx.font = "400 22px sans-serif";
     ctx.fillText(
       `${formatarDataBr(vistoria.data)} · Responsável: ${vistoria.responsavelVistoria || "-"} · ${itens.length} pendência(s)`,
@@ -320,7 +330,7 @@ async function gerarImagemBase(
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    const thumbSize = 220;
+    const thumbSize = 260;
     const thumbX = PAD + 20;
     const thumbY = cardTop + 20;
     if (item.foto) {
@@ -364,7 +374,7 @@ async function gerarImagemBase(
     ctx.font = "bold 22px sans-serif";
     let bx = textX;
     const badgesResumo = [
-      ...(!subtituloEquipe && item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
+      ...(!ocultarBadgeEquipe && item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
       { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
       { texto: status, cor: corStatus(status) },
     ];
@@ -483,7 +493,10 @@ export async function gerarImagemEquipe(vistoria: VistoriaObra, equipe: string):
   const itensDaEquipe = vistoria.itens.filter(
     (it) => (it.equipe && it.equipe.trim() ? it.equipe : "Sem equipe definida") === equipe
   );
-  return gerarImagemBase(vistoria, itensDaEquipe, equipe);
+  return gerarImagemBase(vistoria, itensDaEquipe, {
+    subtitulo: `Equipe: ${equipe}`,
+    ocultarBadgeEquipe: true,
+  });
 }
 
 export function nomeArquivoImagemEquipe(vistoria: VistoriaObra, equipe: string): string {
@@ -529,6 +542,94 @@ export async function compartilharImagemEquipe(vistoria: VistoriaObra, equipe: s
   window.open(
     `https://wa.me/?text=${encodeURIComponent(
       `Tarefas da equipe ${equipe} - ${vistoria.obraNome}. Confira a imagem baixada.`
+    )}`,
+    "_blank"
+  );
+}
+
+function legendaFiltro(filtroEquipe: string, filtroStatus: string): string {
+  const partes = [filtroEquipe, filtroStatus].filter(Boolean);
+  return partes.length > 0 ? partes.join(" · ") : "todas as pendências";
+}
+
+/**
+ * Gera uma imagem-resumo com as pendências já filtradas por equipe e/ou
+ * situação no histórico (podem vir de vistorias diferentes) — pensada
+ * para mandar de uma vez só o recorte que está sendo visto na tela.
+ */
+export async function gerarImagemFiltrada(
+  obraNome: string,
+  itens: PendenciaVistoria[],
+  filtroEquipe: string,
+  filtroStatus: string
+): Promise<Blob> {
+  const vistoriaSintetica: VistoriaObra = {
+    id: "filtro",
+    obraId: "",
+    obraNome,
+    responsavelVistoria: "",
+    data: new Date().toISOString().slice(0, 10),
+    criadoEm: new Date().toISOString(),
+    itens,
+  };
+  const partesFiltro = [filtroEquipe, filtroStatus].filter(Boolean);
+  const subtitulo = partesFiltro.length > 0 ? `Filtro: ${partesFiltro.join(" · ")}` : undefined;
+  return gerarImagemBase(vistoriaSintetica, itens, {
+    subtitulo,
+    ocultarBadgeEquipe: Boolean(filtroEquipe),
+  });
+}
+
+export function nomeArquivoImagemFiltrada(obraNome: string): string {
+  return `vistoria-${slugify(obraNome || "vistoria")}-filtro-${new Date().toISOString().slice(0, 10)}.jpg`;
+}
+
+/**
+ * Compartilha via WhatsApp a imagem-resumo das pendências filtradas por
+ * equipe e/ou situação — junta tudo que bate com o filtro atual do
+ * histórico numa imagem só, em vez de precisar abrir vistoria por
+ * vistoria.
+ */
+export async function compartilharImagemFiltrada(
+  obraNome: string,
+  itens: PendenciaVistoria[],
+  filtroEquipe: string,
+  filtroStatus: string
+): Promise<void> {
+  const blob = await gerarImagemFiltrada(obraNome, itens, filtroEquipe, filtroStatus);
+  const fileName = nomeArquivoImagemFiltrada(obraNome);
+  const file = new File([blob], fileName, { type: "image/jpeg" });
+  const legenda = legendaFiltro(filtroEquipe, filtroStatus);
+
+  const nav = navigator as Navigator & {
+    canShare?: (data?: ShareData) => boolean;
+    share?: (data: ShareData) => Promise<void>;
+  };
+
+  if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
+    try {
+      await nav.share({
+        files: [file],
+        title: "Tarefas filtradas",
+        text: `Tarefas filtradas (${legenda}) - ${obraNome}`,
+      });
+      return;
+    } catch {
+      // usuário cancelou o compartilhamento — cai no fallback abaixo
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(
+      `Tarefas filtradas (${legenda}) - ${obraNome}. Confira a imagem baixada.`
     )}`,
     "_blank"
   );
