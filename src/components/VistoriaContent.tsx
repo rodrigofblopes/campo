@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight, Pencil, Plus, Send, Trash2, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
+import { RdoSimplificadoContent } from "@/components/RdoSimplificadoContent";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
 import { compartilharImagemVistoria, compartilharImagemFiltrada } from "@/lib/image-vistoria";
 import {
@@ -127,7 +128,7 @@ export function VistoriaContent({
   obraId: string;
   obraMeta: ObraMeta;
 }) {
-  const [aba, setAba] = useState<"nova" | "historico" | "pcp">("nova");
+  const [aba, setAba] = useState<"nova" | "historico" | "pcp" | "rdo">("nova");
 
   // ---- formulário de nova vistoria ----
   const [responsavelVistoria, setResponsavelVistoria] = useState("");
@@ -421,6 +422,10 @@ export function VistoriaContent({
         <HorizontalTab active={aba === "pcp"} onClick={() => setAba("pcp")}
           className={aba === "pcp" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
           PCP Semanal
+        </HorizontalTab>
+        <HorizontalTab active={aba === "rdo"} onClick={() => setAba("rdo")}
+          className={aba === "rdo" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
+          RDO Simplificado
         </HorizontalTab>
       </HorizontalScrollTabs>
 
@@ -1170,6 +1175,10 @@ export function VistoriaContent({
             </div>
           )}
         </>
+      )}
+
+      {aba === "rdo" && (
+        <RdoSimplificadoContent obraId={obraId} obraNome={obraMeta.nome} />
       )}
     </>
   );
