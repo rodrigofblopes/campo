@@ -71,7 +71,10 @@ export async function atualizarVistoriaDb(v: VistoriaObra): Promise<void> {
   const sql = getSql();
   await sql`
     UPDATE vistorias
-    SET itens = ${JSON.stringify(v.itens)}
+    SET
+      responsavel_vistoria = ${v.responsavelVistoria},
+      data = ${v.data},
+      itens = ${JSON.stringify(v.itens)}
     WHERE id = ${v.id}
   `;
 }
