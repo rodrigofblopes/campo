@@ -5,7 +5,7 @@ import { Camera, Plus, Send, Trash2, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
-import { compartilharImagemVistoria } from "@/lib/image-vistoria";
+import { compartilharImagemVistoria, compartilharImagemEquipe } from "@/lib/image-vistoria";
 import {
   contarPendencias,
   getVistorias,
@@ -564,6 +564,34 @@ export function VistoriaContent({
                         <Trash2 size={14} />
                       </button>
                     </div>
+
+                    {equipesUnicas.length > 0 && (
+                      <div className="px-4 pb-4">
+                        <label className="block">
+                          <span className="text-xs font-medium text-slate-500">
+                            Enviar só as tarefas de uma equipe
+                          </span>
+                          <select
+                            defaultValue=""
+                            onChange={(e) => {
+                              const equipeEscolhida = e.target.value;
+                              if (equipeEscolhida) {
+                                compartilharImagemEquipe(v, equipeEscolhida);
+                                e.target.value = "";
+                              }
+                            }}
+                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          >
+                            <option value="">Selecione a equipe...</option>
+                            {equipesUnicas.map((eq) => (
+                              <option key={eq} value={eq}>
+                                {eq}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    )}
 
                     {aberto && (
                       <div className="space-y-2 border-t border-slate-100 p-4">
