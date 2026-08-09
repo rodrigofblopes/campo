@@ -244,19 +244,22 @@ export async function compartilharImagemPendencia(
 }
 
 /**
- * Gera uma única imagem-resumo com todas as pendências da vistoria —
- * pensada para ser compartilhada no WhatsApp com quem vai executar o
- * serviço, sem precisar abrir um PDF. Mais rápida de abrir e olhar no
- * celular do que um PDF.
+ * Desenha a imagem-resumo (cabeçalho + cards das pendências) num canvas.
+ * Usada tanto pela imagem completa da vistoria quanto pela imagem
+ * filtrada de uma única equipe — a diferença é só a lista de itens e o
+ * subtítulo opcional (nome da equipe) exibido no cabeçalho.
  */
-export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob> {
+async function gerarImagemBase(
+  vistoria: VistoriaObra,
+  itens: PendenciaVistoria[],
+  subtituloEquipe?: string
+): Promise<Blob> {
   const W = 1080;
   const PAD = 48;
-  const headerH = 220;
+  const headerH = subtituloEquipe ? 260 : 220;
   const itemH = 300;
   const itemGap = 28;
   const footerH = 70;
-  const itens = vistoria.itens;
   const H = headerH + itens.length * (itemH + itemGap) + footerH;
 
   const canvas = document.createElement("canvas");
@@ -277,12 +280,32 @@ export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob>
   ctx.fillText("VISTORIA DE OBRA", PAD, 116);
   ctx.font = "600 32px sans-serif";
   ctx.fillText(vistoria.obraNome || "-", PAD, 164);
-  ctx.font = "400 24px sans-serif";
-  ctx.fillText(
-    `${formatarDataBr(vistoria.data)} · Responsável: ${vistoria.responsavelVistoria || "-"} · ${itens.length} pendência(s)`,
-    PAD,
-    200
-  );
+
+  if (subtituloEquipe) {
+    // Selo com o nome da equipe em destaque — deixa claro pra quem abrir
+    // a imagem que ali só tem as tarefas daquela equipe.
+    ctx.font = "bold 26px sans-serif";
+    const larguraSelo = ctx.measureText(`Equipe: ${subtituloEquipe}`).width + 40;
+    ctx.fillStyle = "#0891b2";
+    ctx.beginPath();
+    ctx.roundRect(PAD, 178, larguraSelo, 44, 22);
+    ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(`Equipe: ${subtituloEquipe}`, PAD + 20, 208);
+    ctx.font = "400 22px sans-serif";
+    ctx.fillText(
+      `${formatarDataBr(vistoria.data)} · Responsável: ${vistoria.responsavelVistoria || "-"} · ${itens.length} pendência(s)`,
+      PAD,
+      244
+    );
+  } else {
+    ctx.font = "400 24px sans-serif";
+    ctx.fillText(
+      `${formatarDataBr(vistoria.data)} · Responsável: ${vistoria.responsavelVistoria || "-"} · ${itens.length} pendência(s)`,
+      PAD,
+      200
+    );
+  }
 
   const hoje = new Date().toISOString().slice(0, 10);
   let y = headerH + 24;
@@ -341,7 +364,7 @@ export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob>
     ctx.font = "bold 22px sans-serif";
     let bx = textX;
     const badgesResumo = [
-      ...(item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
+      ...(!subtituloEquipe && item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
       { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
       { texto: status, cor: corStatus(status) },
     ];
@@ -392,6 +415,16 @@ export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob>
   });
 }
 
+/**
+ * Gera uma única imagem-resumo com todas as pendências da vistoria —
+ * pensada para ser compartilhada no WhatsApp com quem vai executar o
+ * serviço, sem precisar abrir um PDF. Mais rápida de abrir e olhar no
+ * celular do que um PDF.
+ */
+export async function gerarImagemVistoria(vistoria: VistoriaObra): Promise<Blob> {
+  return gerarImagemBase(vistoria, vistoria.itens);
+}
+
 export function nomeArquivoImagemVistoria(vistoria: VistoriaObra): string {
   return `vistoria-${slugify(vistoria.obraNome || "vistoria")}-${vistoria.data || ""}.jpg`;
 }
@@ -436,6 +469,66 @@ export async function compartilharImagemVistoria(vistoria: VistoriaObra): Promis
   window.open(
     `https://wa.me/?text=${encodeURIComponent(
       `Vistoria - ${vistoria.obraNome}. Confira a imagem baixada.`
+    )}`,
+    "_blank"
+  );
+}
+
+/**
+ * Gera uma imagem-resumo só com as pendências de UMA equipe — pensada
+ * para enviar direto pro responsável daquela equipe, sem misturar com as
+ * tarefas de outras equipes.
+ */
+export async function gerarImagemEquipe(vistoria: VistoriaObra, equipe: string): Promise<Blob> {
+  const itensDaEquipe = vistoria.itens.filter(
+    (it) => (it.equipe && it.equipe.trim() ? it.equipe : "Sem equipe definida") === equipe
+  );
+  return gerarImagemBase(vistoria, itensDaEquipe, equipe);
+}
+
+export function nomeArquivoImagemEquipe(vistoria: VistoriaObra, equipe: string): string {
+  return `vistoria-${slugify(vistoria.obraNome || "vistoria")}-${slugify(equipe)}-${vistoria.data || ""}.jpg`;
+}
+
+/**
+ * Compartilha a imagem só das pendências de uma equipe via Web Share API
+ * — pra mandar direto pro responsável daquela equipe as tarefas que ele
+ * precisa executar, sem o resto da vistoria.
+ */
+export async function compartilharImagemEquipe(vistoria: VistoriaObra, equipe: string): Promise<void> {
+  const blob = await gerarImagemEquipe(vistoria, equipe);
+  const fileName = nomeArquivoImagemEquipe(vistoria, equipe);
+  const file = new File([blob], fileName, { type: "image/jpeg" });
+
+  const nav = navigator as Navigator & {
+    canShare?: (data?: ShareData) => boolean;
+    share?: (data: ShareData) => Promise<void>;
+  };
+
+  if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
+    try {
+      await nav.share({
+        files: [file],
+        title: `Equipe ${equipe}`,
+        text: `Tarefas da equipe ${equipe} - ${vistoria.obraNome}`,
+      });
+      return;
+    } catch {
+      // usuário cancelou o compartilhamento — cai no fallback abaixo
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(
+      `Tarefas da equipe ${equipe} - ${vistoria.obraNome}. Confira a imagem baixada.`
     )}`,
     "_blank"
   );
