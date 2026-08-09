@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Camera, ChevronLeft, ChevronRight, Plus, Send, Trash2, X } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Pencil, Plus, Send, Trash2, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
@@ -140,6 +140,11 @@ export function VistoriaContent({
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [filtroEquipe, setFiltroEquipe] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
+
+  // ---- edição de vistoria já salva ----
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [rascunho, setRascunho] = useState<VistoriaObra | null>(null);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   // ---- PCP semanal ----
   const [semanaOffset, setSemanaOffset] = useState(0);
@@ -356,6 +361,45 @@ export function VistoriaContent({
     };
     setVistorias((lista) => lista.map((v) => (v.id === vistoriaId ? atualizada : v)));
     await atualizarVistoria(obraId, atualizada);
+  }
+
+  // Entra em modo de edição de uma vistoria já salva: trabalha em cima de um
+  // rascunho separado (cópia local) até o usuário confirmar em "Salvar
+  // alterações" — cancelar não deixa nenhum rastro no histórico.
+  function iniciarEdicaoVistoria(v: VistoriaObra) {
+    setEditandoId(v.id);
+    setRascunho(JSON.parse(JSON.stringify(v)) as VistoriaObra);
+    setAbertoId(v.id);
+  }
+
+  function cancelarEdicaoVistoria() {
+    setEditandoId(null);
+    setRascunho(null);
+  }
+
+  function atualizarRascunho(patch: Partial<Pick<VistoriaObra, "responsavelVistoria" | "data">>) {
+    setRascunho((r) => (r ? { ...r, ...patch } : r));
+  }
+
+  function atualizarItemRascunho(itemId: string, patch: Partial<PendenciaVistoria>) {
+    setRascunho((r) =>
+      r ? { ...r, itens: r.itens.map((it) => (it.id === itemId ? { ...it, ...patch } : it)) } : r
+    );
+  }
+
+  async function salvarEdicaoVistoria() {
+    if (!rascunho) return;
+    setSalvandoEdicao(true);
+    try {
+      const atualizada = rascunho;
+      setVistorias((lista) => lista.map((v) => (v.id === atualizada.id ? atualizada : v)));
+      const ok = await atualizarVistoria(obraId, atualizada);
+      if (!ok) alert("Não foi possível salvar agora. Verifique a conexão e tente novamente.");
+      setEditandoId(null);
+      setRascunho(null);
+    } finally {
+      setSalvandoEdicao(false);
+    }
   }
 
   return (
@@ -720,6 +764,16 @@ export function VistoriaContent({
                       </button>
                       <button
                         type="button"
+                        onClick={() =>
+                          editandoId === v.id ? cancelarEdicaoVistoria() : iniciarEdicaoVistoria(v)
+                        }
+                        aria-label="Editar vistoria"
+                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-600 hover:bg-slate-50"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => handleExcluirVistoria(v.id)}
                         aria-label="Excluir vistoria"
                         className="rounded-lg border border-red-200 bg-white px-3 py-2 text-red-600 hover:bg-red-50"
@@ -728,7 +782,129 @@ export function VistoriaContent({
                       </button>
                     </div>
 
-                    {aberto && (
+                    {aberto && editandoId === v.id && rascunho && (
+                      <div className="space-y-3 border-t border-slate-100 p-4">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <label className="block">
+                            <span className="text-xs font-medium text-slate-500">Responsável pela vistoria</span>
+                            <input
+                              type="text"
+                              value={rascunho.responsavelVistoria}
+                              onChange={(e) => atualizarRascunho({ responsavelVistoria: e.target.value })}
+                              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-medium text-slate-500">Data</span>
+                            <input
+                              type="date"
+                              value={rascunho.data}
+                              onChange={(e) => atualizarRascunho({ data: e.target.value })}
+                              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                            />
+                          </label>
+                        </div>
+
+                        {rascunho.itens.map((item, idx) => (
+                          <div key={item.id} className="rounded-lg bg-slate-50 p-3">
+                            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+                              Pendência {idx + 1}
+                            </p>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">Local / Ambiente</span>
+                                <input
+                                  type="text"
+                                  value={item.local}
+                                  onChange={(e) => atualizarItemRascunho(item.id, { local: e.target.value })}
+                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">Responsável</span>
+                                <input
+                                  type="text"
+                                  value={item.responsavel}
+                                  onChange={(e) => atualizarItemRascunho(item.id, { responsavel: e.target.value })}
+                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                />
+                              </label>
+                            </div>
+                            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">Equipe</span>
+                                <select
+                                  value={item.equipe || ""}
+                                  onChange={(e) => atualizarItemRascunho(item.id, { equipe: e.target.value })}
+                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                >
+                                  <option value="">Selecione</option>
+                                  {EQUIPES.map((eq) => (
+                                    <option key={eq} value={eq}>
+                                      {eq}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">Prioridade</span>
+                                <select
+                                  value={item.prioridade}
+                                  onChange={(e) =>
+                                    atualizarItemRascunho(item.id, {
+                                      prioridade: e.target.value as PendenciaVistoria["prioridade"],
+                                    })
+                                  }
+                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                >
+                                  <option value="Baixa">Baixa</option>
+                                  <option value="Média">Média</option>
+                                  <option value="Alta">Alta</option>
+                                </select>
+                              </label>
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">Prazo</span>
+                                <input
+                                  type="date"
+                                  value={item.prazo}
+                                  onChange={(e) => atualizarItemRascunho(item.id, { prazo: e.target.value })}
+                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                />
+                              </label>
+                            </div>
+                            <label className="mt-2 block">
+                              <span className="text-xs font-medium text-slate-500">O que está errado</span>
+                              <textarea
+                                value={item.descricao}
+                                onChange={(e) => atualizarItemRascunho(item.id, { descricao: e.target.value })}
+                                rows={2}
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                              />
+                            </label>
+                          </div>
+                        ))}
+
+                        <div className="flex gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={cancelarEdicaoVistoria}
+                            className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            disabled={salvandoEdicao}
+                            onClick={salvarEdicaoVistoria}
+                            className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {salvandoEdicao ? "Salvando..." : "Salvar alterações"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {aberto && editandoId !== v.id && (
                       <div className="space-y-2 border-t border-slate-100 p-4">
                         {itensExibidos.map((item) => {
                           const hoje = new Date().toISOString().slice(0, 10);
