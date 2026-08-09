@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Camera, Plus, Send, Trash2, X } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Plus, Send, Trash2, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
-import { compartilharImagemVistoria, compartilharImagemEquipe } from "@/lib/image-vistoria";
+import { compartilharImagemVistoria, compartilharImagemFiltrada } from "@/lib/image-vistoria";
 import {
   contarPendencias,
   getVistorias,
@@ -127,7 +127,7 @@ export function VistoriaContent({
   obraId: string;
   obraMeta: ObraMeta;
 }) {
-  const [aba, setAba] = useState<"nova" | "historico">("nova");
+  const [aba, setAba] = useState<"nova" | "historico" | "pcp">("nova");
 
   // ---- formulário de nova vistoria ----
   const [responsavelVistoria, setResponsavelVistoria] = useState("");
@@ -138,6 +138,12 @@ export function VistoriaContent({
   // ---- histórico ----
   const [vistorias, setVistorias] = useState<VistoriaObra[]>([]);
   const [abertoId, setAbertoId] = useState<string | null>(null);
+  const [filtroEquipe, setFiltroEquipe] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("");
+
+  // ---- PCP semanal ----
+  const [semanaOffset, setSemanaOffset] = useState(0);
+  const [itemSelecionado, setItemSelecionado] = useState<PendenciaVistoria | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -156,6 +162,83 @@ export function VistoriaContent({
   }
 
   const contadores = useMemo(() => contarPendencias(vistorias), [vistorias]);
+
+  // Aplica os filtros de equipe/situação por pendência: cada vistoria só
+  // aparece se tiver pelo menos uma pendência que bate com os filtros, e
+  // o card mostra só as pendências filtradas (não a vistoria inteira).
+  const filtroAtivo = Boolean(filtroEquipe || filtroStatus);
+  const vistoriasFiltradas = useMemo(() => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    return vistorias
+      .map((v) => {
+        const itensExibidos = filtroAtivo
+          ? v.itens.filter((it) => {
+              const statusEf = statusEfetivo(it, hoje);
+              const bateEquipe = !filtroEquipe || it.equipe === filtroEquipe;
+              const bateStatus = !filtroStatus || statusEf === filtroStatus;
+              return bateEquipe && bateStatus;
+            })
+          : v.itens;
+        return { vistoria: v, itensExibidos };
+      })
+      .filter(({ itensExibidos }) => !filtroAtivo || itensExibidos.length > 0);
+  }, [vistorias, filtroEquipe, filtroStatus, filtroAtivo]);
+
+  // Todas as pendências que batem com o filtro atual, de todas as
+  // vistorias juntas — usada para mandar uma única imagem com o recorte
+  // que está sendo visto no histórico (equipe e/ou situação).
+  const itensFiltradosGlobal = useMemo(
+    () => vistoriasFiltradas.flatMap(({ itensExibidos }) => itensExibidos),
+    [vistoriasFiltradas]
+  );
+
+  // Quantas pendências em aberto (não concluídas) cada equipe tem agora,
+  // somando todas as vistorias — ajuda a balancear o time e decidir quem
+  // chamar primeiro.
+  const cargaEquipes = useMemo(() => {
+    const mapa = new Map<string, number>();
+    for (const v of vistorias) {
+      for (const it of v.itens) {
+        if (it.status !== "Concluído" && it.equipe) {
+          mapa.set(it.equipe, (mapa.get(it.equipe) || 0) + 1);
+        }
+      }
+    }
+    return Array.from(mapa.entries())
+      .map(([equipe, total]) => ({ equipe, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [vistorias]);
+
+  const hojeISO = new Date().toISOString().slice(0, 10);
+
+  // Segunda a domingo da semana selecionada (0 = semana atual).
+  const diasSemana = useMemo(() => {
+    const hoje = new Date();
+    const diaSemanaAtual = hoje.getDay(); // 0 = domingo
+    const deltaParaSegunda = diaSemanaAtual === 0 ? -6 : 1 - diaSemanaAtual;
+    const segunda = new Date(hoje);
+    segunda.setHours(0, 0, 0, 0);
+    segunda.setDate(segunda.getDate() + deltaParaSegunda + semanaOffset * 7);
+    const nomes = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
+    return nomes.map((nome, i) => {
+      const d = new Date(segunda);
+      d.setDate(segunda.getDate() + i);
+      const iso = d.toISOString().slice(0, 10);
+      const diaMes = `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+      return { nome, iso, diaMes };
+    });
+  }, [semanaOffset]);
+
+  // Pendências de todas as vistorias, achatadas — cada tarefa cai no dia da
+  // semana do seu prazo (Previsto) e, se já concluída, no dia em que foi
+  // marcada como Concluído (Realizado).
+  const todosItens = useMemo(() => {
+    return vistorias.flatMap((v) => v.itens);
+  }, [vistorias]);
+
+  const temItemNaSemana = diasSemana.some((dia) =>
+    todosItens.some((it) => it.prazo === dia.iso)
+  );
 
   function atualizarItem(id: string, patch: Partial<PendenciaVistoria>) {
     setItens((lista) => lista.map((it) => (it.id === id ? { ...it, ...patch } : it)));
@@ -290,6 +373,10 @@ export function VistoriaContent({
         <HorizontalTab active={aba === "historico"} onClick={abrirHistorico}
           className={aba === "historico" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
           Histórico
+        </HorizontalTab>
+        <HorizontalTab active={aba === "pcp"} onClick={() => setAba("pcp")}
+          className={aba === "pcp" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
+          PCP Semanal
         </HorizontalTab>
       </HorizontalScrollTabs>
 
@@ -492,21 +579,97 @@ export function VistoriaContent({
             </Card>
           </div>
 
+          {cargaEquipes.length > 0 && (
+            <Card className="mb-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Carga por equipe · pendências em aberto
+              </p>
+              <div className="space-y-2.5">
+                {cargaEquipes.map(({ equipe, total }) => (
+                  <div key={equipe}>
+                    <div className="mb-1 flex items-center justify-between text-xs">
+                      <span className="font-medium text-slate-700">{equipe}</span>
+                      <span className="font-bold text-slate-900">{total}</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-blue-600"
+                        style={{ width: `${Math.max(8, (total / cargaEquipes[0].total) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {vistorias.length > 0 && (
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500">Filtrar por equipe</span>
+                <select
+                  value={filtroEquipe}
+                  onChange={(e) => setFiltroEquipe(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                >
+                  <option value="">Todas as equipes</option>
+                  {EQUIPES.map((eq) => (
+                    <option key={eq} value={eq}>
+                      {eq}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500">Filtrar por situação</span>
+                <select
+                  value={filtroStatus}
+                  onChange={(e) => setFiltroStatus(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                >
+                  <option value="">Todas as situações</option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Em execução">Em execução</option>
+                  <option value="Concluído">Concluído</option>
+                  <option value="Atrasado">Atrasado</option>
+                </select>
+              </label>
+            </div>
+          )}
+
+          {itensFiltradosGlobal.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                compartilharImagemFiltrada(obraMeta.nome, itensFiltradosGlobal, filtroEquipe, filtroStatus)
+              }
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
+            >
+              <Send size={16} />
+              WhatsApp (Imagem) · {itensFiltradosGlobal.length} tarefa{itensFiltradosGlobal.length > 1 ? "s" : ""}
+              {filtroAtivo ? " filtrada" + (itensFiltradosGlobal.length > 1 ? "s" : "") : ""}
+            </button>
+          )}
+
           {vistorias.length === 0 ? (
             <Card className="py-10 text-center text-sm text-slate-500">
               Nenhuma vistoria registrada ainda para esta obra.
             </Card>
+          ) : vistoriasFiltradas.length === 0 ? (
+            <Card className="py-10 text-center text-sm text-slate-500">
+              Nenhuma atividade encontrada com esse filtro.
+            </Card>
           ) : (
             <div className="space-y-3">
-              {vistorias.map((v) => {
-                const concluidas = v.itens.filter((it) => it.status === "Concluído").length;
+              {vistoriasFiltradas.map(({ vistoria: v, itensExibidos }) => {
+                const concluidas = itensExibidos.filter((it) => it.status === "Concluído").length;
                 const aberto = abertoId === v.id;
                 const hoje = new Date().toISOString().slice(0, 10);
-                const locais = v.itens.map((it) => it.local || "Pendência");
+                const locais = itensExibidos.map((it) => it.local || "Pendência");
                 const equipesUnicas = Array.from(
                   new Set(v.itens.map((it) => it.equipe).filter((eq): eq is string => Boolean(eq)))
                 );
-                const temAtrasado = v.itens.some((it) => statusEfetivo(it, hoje) === "Atrasado");
+                const temAtrasado = itensExibidos.some((it) => statusEfetivo(it, hoje) === "Atrasado");
                 return (
                   <Card key={v.id} className="p-0">
                     <button
@@ -520,7 +683,7 @@ export function VistoriaContent({
                         </h3>
                         <p className="mt-0.5 text-xs text-slate-500">
                           <span className="font-semibold text-blue-600">
-                            {concluidas}/{v.itens.length}
+                            {concluidas}/{itensExibidos.length}
                           </span>{" "}
                           pendência(s) concluída(s)
                         </p>
@@ -565,37 +728,9 @@ export function VistoriaContent({
                       </button>
                     </div>
 
-                    {equipesUnicas.length > 0 && (
-                      <div className="px-4 pb-4">
-                        <label className="block">
-                          <span className="text-xs font-medium text-slate-500">
-                            Enviar só as tarefas de uma equipe
-                          </span>
-                          <select
-                            defaultValue=""
-                            onChange={(e) => {
-                              const equipeEscolhida = e.target.value;
-                              if (equipeEscolhida) {
-                                compartilharImagemEquipe(v, equipeEscolhida);
-                                e.target.value = "";
-                              }
-                            }}
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          >
-                            <option value="">Selecione a equipe...</option>
-                            {equipesUnicas.map((eq) => (
-                              <option key={eq} value={eq}>
-                                {eq}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                      </div>
-                    )}
-
                     {aberto && (
                       <div className="space-y-2 border-t border-slate-100 p-4">
-                        {v.itens.map((item) => {
+                        {itensExibidos.map((item) => {
                           const hoje = new Date().toISOString().slice(0, 10);
                           const status = statusEfetivo(item, hoje);
                           return (
@@ -658,6 +793,204 @@ export function VistoriaContent({
                   </Card>
                 );
               })}
+            </div>
+          )}
+        </>
+      )}
+
+      {aba === "pcp" && (
+        <>
+          <div className="mb-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setSemanaOffset((n) => n - 1)}
+              aria-label="Semana anterior"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <div className="text-center">
+              <p className="text-sm font-bold text-slate-900">
+                Semana de {diasSemana[0].diaMes} a {diasSemana[6].diaMes}
+              </p>
+              {semanaOffset !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSemanaOffset(0)}
+                  className="text-xs font-medium text-blue-600 hover:underline"
+                >
+                  Voltar para semana atual
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSemanaOffset((n) => n + 1)}
+              aria-label="Próxima semana"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full min-w-[720px] border-collapse text-xs">
+              <thead>
+                <tr>
+                  <th className="w-24 border-b border-slate-200 p-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400" />
+                  {diasSemana.map((dia) => (
+                    <th
+                      key={dia.iso}
+                      className={`border-b border-slate-200 p-2 text-center text-[11px] font-bold uppercase tracking-wide ${
+                        dia.iso === hojeISO ? "bg-blue-50 text-blue-700" : "text-slate-500"
+                      }`}
+                    >
+                      {dia.nome}
+                      <div className="text-[10px] font-medium normal-case text-slate-400">{dia.diaMes}</div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border-b border-slate-100 p-2 align-top text-[11px] font-bold uppercase tracking-wide text-amber-600">
+                    Previsto
+                  </td>
+                  {diasSemana.map((dia) => {
+                    const itensDia = todosItens.filter((it) => it.prazo === dia.iso);
+                    return (
+                      <td
+                        key={dia.iso}
+                        className={`border-b border-l border-slate-100 p-2 align-top ${
+                          dia.iso === hojeISO ? "bg-blue-50/40" : ""
+                        }`}
+                      >
+                        <div className="flex flex-col gap-1">
+                          {itensDia.map((it) => (
+                            <button
+                              key={it.id}
+                              type="button"
+                              onClick={() => setItemSelecionado(it)}
+                              title={it.local || it.descricao}
+                              className="truncate rounded bg-amber-50 px-1.5 py-1 text-left text-[10px] font-medium text-amber-700 hover:bg-amber-100"
+                            >
+                              {it.local || it.descricao}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+                <tr>
+                  <td className="p-2 align-top text-[11px] font-bold uppercase tracking-wide text-emerald-600">
+                    Realizado
+                  </td>
+                  {diasSemana.map((dia) => {
+                    const itensDia = todosItens.filter(
+                      (it) =>
+                        it.status === "Concluído" &&
+                        it.concluidoEm &&
+                        it.concluidoEm.slice(0, 10) === dia.iso
+                    );
+                    return (
+                      <td
+                        key={dia.iso}
+                        className={`border-l border-slate-100 p-2 align-top ${
+                          dia.iso === hojeISO ? "bg-blue-50/40" : ""
+                        }`}
+                      >
+                        <div className="flex flex-col gap-1">
+                          {itensDia.map((it) => (
+                            <button
+                              key={it.id}
+                              type="button"
+                              onClick={() => setItemSelecionado(it)}
+                              title={it.local || it.descricao}
+                              className="truncate rounded bg-emerald-50 px-1.5 py-1 text-left text-[10px] font-medium text-emerald-700 hover:bg-emerald-100"
+                            >
+                              {it.local || it.descricao}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </Card>
+
+          {!temItemNaSemana && (
+            <p className="mt-3 text-center text-xs text-slate-400">
+              Nenhuma pendência com prazo nesta semana.
+            </p>
+          )}
+
+          {itemSelecionado && (
+            <div
+              className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
+              onClick={() => setItemSelecionado(null)}
+            >
+              <div
+                className="w-full max-w-md rounded-t-2xl bg-white p-5 sm:rounded-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-3 flex items-start justify-between gap-3">
+                  <h3 className="text-base font-bold text-slate-900">
+                    {itemSelecionado.local || "Pendência"}
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setItemSelecionado(null)}
+                    aria-label="Fechar"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {itemSelecionado.equipe && <Badge variant="default">{itemSelecionado.equipe}</Badge>}
+                  <Badge variant="default">Prioridade {itemSelecionado.prioridade}</Badge>
+                  <Badge variant={badgeVariant(statusEfetivo(itemSelecionado, hojeISO))}>
+                    {statusEfetivo(itemSelecionado, hojeISO)}
+                  </Badge>
+                </div>
+
+                <p className="mb-3 text-sm text-slate-600">{itemSelecionado.descricao || "-"}</p>
+
+                <div className="mb-3 space-y-1 text-xs text-slate-500">
+                  <p>
+                    Prazo:{" "}
+                    {itemSelecionado.prazo
+                      ? itemSelecionado.prazo.split("-").reverse().join("/")
+                      : "a definir"}
+                  </p>
+                  <p>Responsável: {itemSelecionado.responsavel || "-"}</p>
+                </div>
+
+                {(itemSelecionado.foto || itemSelecionado.fotoDepois) && (
+                  <div className="flex gap-2">
+                    {itemSelecionado.foto && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={itemSelecionado.foto}
+                        alt="Antes"
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
+                    )}
+                    {itemSelecionado.fotoDepois && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={itemSelecionado.fotoDepois}
+                        alt="Depois"
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </>

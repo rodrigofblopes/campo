@@ -1,6 +1,9 @@
 import type { Obra } from "./types";
 import { OBRA_SICREDI } from "./default-data";
-import { OBRA_AMAGGI } from "./default-data-amaggi";
+// OBRA_AMAGGI segue disponível em default-data-amaggi.ts (planilha alimentada
+// à parte) — descomente este import junto com o bloco abaixo quando a obra
+// fechar e voltar a aparecer no app.
+// import { OBRA_AMAGGI } from "./default-data-amaggi";
 
 export type StatusObra = "em_andamento" | "planejamento" | "concluida";
 
@@ -34,16 +37,19 @@ export const OBRAS: ObraMeta[] = [
     foto: "/obra-sicredi.jpeg",
     obra: OBRA_SICREDI,
   },
-  {
-    id: "amaggi",
-    nome: OBRA_AMAGGI.nome,
-    cliente: OBRA_AMAGGI.cliente,
-    localizacao: "Ariquemes - RO",
-    status: "planejamento",
-    descricao: "Próxima obra — planilha e cronograma prontos, aguardando início.",
-    // Sem foto ainda — adicionar quando houver um registro fotográfico real da obra.
-    obra: OBRA_AMAGGI,
-  },
+  // Amaggi ainda não fechou — tirado da listagem por pedido do Rodrigo.
+  // Os dados continuam em default-data-amaggi.ts (alimentados via planilha
+  // à parte); é só descomentar o bloco abaixo pra reincluir a obra aqui
+  // quando ela fechar.
+  // {
+  //   id: "amaggi",
+  //   nome: OBRA_AMAGGI.nome,
+  //   cliente: OBRA_AMAGGI.cliente,
+  //   localizacao: "Ariquemes - RO",
+  //   status: "planejamento",
+  //   descricao: "Próxima obra — planilha e cronograma prontos, aguardando início.",
+  //   obra: OBRA_AMAGGI,
+  // },
 ];
 
 export function getObraMeta(id: string): ObraMeta | undefined {

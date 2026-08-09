@@ -80,7 +80,7 @@ export function NavContent({
               alt="Neto Lara Steel Frame"
               width={320}
               height={120}
-              className="mx-auto h-auto w-full min-h-[72px] max-h-28 object-contain object-center scale-110 lg:min-h-[88px] lg:max-h-36"
+              className="mx-auto h-auto w-full min-h-[88px] max-h-32 object-contain object-center scale-110 lg:min-h-[104px] lg:max-h-40"
               priority
               unoptimized
             />
