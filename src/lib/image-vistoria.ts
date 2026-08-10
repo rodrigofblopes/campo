@@ -1,10 +1,36 @@
 import type { PendenciaVistoria, VistoriaObra } from "./vistoria-types";
 import { statusEfetivo } from "./vistoria-types";
 
+// Link do app incluído nas mensagens de compartilhamento — quem recebe a
+// imagem no WhatsApp consegue abrir o Campo direto, sem precisar pedir o
+// link para quem enviou.
+const APP_URL = "https://campo-one.vercel.app";
+
 function formatarDataBr(iso: string): string {
   if (!iso) return "-";
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
+}
+
+const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+// Formata o prazo como "dd/mm/aaaa (Dia da semana)" — mesmo padrão usado no
+// app, pra quem recebe a imagem no WhatsApp já saber de cabeça em que dia
+// da semana vence.
+function formatarDataComDia(iso: string): string {
+  if (!iso) return "-";
+  const [y, m, d] = iso.split("-").map(Number);
+  const dataBr = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+  const data = new Date(y, m - 1, d);
+  return `${dataBr} (${DIAS_SEMANA[data.getDay()]})`;
 }
 
 function carregarImagem(src: string): Promise<HTMLImageElement> {
@@ -47,12 +73,6 @@ function quebrarTexto(ctx: CanvasRenderingContext2D, texto: string, maxWidth: nu
   }
   if (linha) linhas.push(linha);
   return linhas;
-}
-
-function corPrioridade(prioridade: string): string {
-  if (prioridade === "Alta") return "#dc2626";
-  if (prioridade === "Média") return "#d97706";
-  return "#64748b";
 }
 
 function corStatus(status: string): string {
@@ -144,7 +164,6 @@ export async function gerarImagemPendencia(
   const status = statusEfetivo(item, hoje);
   const badges = [
     ...(item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
-    { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
     { texto: status, cor: corStatus(status) },
   ];
   let bx = 48;
@@ -172,7 +191,7 @@ export async function gerarImagemPendencia(
 
   ctx.font = "bold 38px sans-serif";
   ctx.fillStyle = status === "Atrasado" ? "#dc2626" : "#0f172a";
-  ctx.fillText(`Prazo: ${item.prazo ? formatarDataBr(item.prazo) : "a definir"}`, 48, y);
+  ctx.fillText(`Prazo: ${item.prazo ? formatarDataComDia(item.prazo) : "a definir"}`, 48, y);
   y += 50;
   ctx.font = "500 32px sans-serif";
   ctx.fillStyle = "#334155";
@@ -219,7 +238,7 @@ export async function compartilharImagemPendencia(
       await nav.share({
         files: [file],
         title: "Pendência de Vistoria",
-        text: `${item.local || "Pendência"} — ${vistoria.obraNome}`,
+        text: `${item.local || "Pendência"} — ${vistoria.obraNome}\n\nAcompanhe pelo app Campo: ${APP_URL}`,
       });
       return;
     } catch {
@@ -237,7 +256,7 @@ export async function compartilharImagemPendencia(
   URL.revokeObjectURL(url);
   window.open(
     `https://wa.me/?text=${encodeURIComponent(
-      `${item.local || "Pendência"} — ${vistoria.obraNome}. Confira a imagem baixada.`
+      `${item.local || "Pendência"} — ${vistoria.obraNome}. Confira a imagem baixada.\n\nAcompanhe pelo app Campo: ${APP_URL}`
     )}`,
     "_blank"
   );
@@ -375,7 +394,6 @@ async function gerarImagemBase(
     let bx = textX;
     const badgesResumo = [
       ...(!ocultarBadgeEquipe && item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
-      { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
       { texto: status, cor: corStatus(status) },
     ];
     for (const b of badgesResumo) {
@@ -401,7 +419,7 @@ async function gerarImagemBase(
 
     ctx.font = "bold 26px sans-serif";
     ctx.fillStyle = status === "Atrasado" ? "#dc2626" : "#0f172a";
-    ctx.fillText(`Prazo: ${item.prazo ? formatarDataBr(item.prazo) : "a definir"}`, textX, ty);
+    ctx.fillText(`Prazo: ${item.prazo ? formatarDataComDia(item.prazo) : "a definir"}`, textX, ty);
     ty += 32;
     ctx.font = "400 24px sans-serif";
     ctx.fillStyle = "#475569";
@@ -460,7 +478,7 @@ export async function compartilharImagemVistoria(vistoria: VistoriaObra): Promis
       await nav.share({
         files: [file],
         title: "Vistoria de Obra",
-        text: `Vistoria - ${vistoria.obraNome}`,
+        text: `Vistoria - ${vistoria.obraNome}\n\nAcompanhe pelo app Campo: ${APP_URL}`,
       });
       return;
     } catch {
@@ -478,7 +496,7 @@ export async function compartilharImagemVistoria(vistoria: VistoriaObra): Promis
   URL.revokeObjectURL(url);
   window.open(
     `https://wa.me/?text=${encodeURIComponent(
-      `Vistoria - ${vistoria.obraNome}. Confira a imagem baixada.`
+      `Vistoria - ${vistoria.obraNome}. Confira a imagem baixada.\n\nAcompanhe pelo app Campo: ${APP_URL}`
     )}`,
     "_blank"
   );
@@ -523,7 +541,7 @@ export async function compartilharImagemEquipe(vistoria: VistoriaObra, equipe: s
       await nav.share({
         files: [file],
         title: `Equipe ${equipe}`,
-        text: `Tarefas da equipe ${equipe} - ${vistoria.obraNome}`,
+        text: `Tarefas da equipe ${equipe} - ${vistoria.obraNome}\n\nAcompanhe pelo app Campo: ${APP_URL}`,
       });
       return;
     } catch {
@@ -541,7 +559,7 @@ export async function compartilharImagemEquipe(vistoria: VistoriaObra, equipe: s
   URL.revokeObjectURL(url);
   window.open(
     `https://wa.me/?text=${encodeURIComponent(
-      `Tarefas da equipe ${equipe} - ${vistoria.obraNome}. Confira a imagem baixada.`
+      `Tarefas da equipe ${equipe} - ${vistoria.obraNome}. Confira a imagem baixada.\n\nAcompanhe pelo app Campo: ${APP_URL}`
     )}`,
     "_blank"
   );
@@ -611,7 +629,7 @@ export async function compartilharImagemFiltrada(
       await nav.share({
         files: [file],
         title: "Tarefas filtradas",
-        text: `Tarefas filtradas (${legenda}) - ${obraNome}`,
+        text: `Tarefas filtradas (${legenda}) - ${obraNome}\n\nAcompanhe pelo app Campo: ${APP_URL}`,
       });
       return;
     } catch {
@@ -629,7 +647,7 @@ export async function compartilharImagemFiltrada(
   URL.revokeObjectURL(url);
   window.open(
     `https://wa.me/?text=${encodeURIComponent(
-      `Tarefas filtradas (${legenda}) - ${obraNome}. Confira a imagem baixada.`
+      `Tarefas filtradas (${legenda}) - ${obraNome}. Confira a imagem baixada.\n\nAcompanhe pelo app Campo: ${APP_URL}`
     )}`,
     "_blank"
   );

@@ -34,7 +34,8 @@ function novaPendenciaDraft(): PendenciaVistoria {
     local: "",
     responsavel: "",
     equipe: "",
-    prioridade: "Média",
+    // Toda atividade é prioridade Alta — não há mais opção pra escolher.
+    prioridade: "Alta",
     prazo: "",
     descricao: "",
     foto: null,
@@ -42,6 +43,27 @@ function novaPendenciaDraft(): PendenciaVistoria {
     fotoDepois: null,
     concluidoEm: null,
   };
+}
+
+const DIAS_SEMANA = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
+
+// Formata uma data yyyy-mm-dd como "dd/mm/aaaa (Dia da semana)" — ajuda a
+// saber de cabeça em que dia da semana cai o prazo, sem precisar consultar
+// um calendário.
+function formatarDataComDia(iso: string): string {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  const dataBr = `${String(d).padStart(2, "0")}/${String(m).padStart(2, "0")}/${y}`;
+  const data = new Date(y, m - 1, d);
+  return `${dataBr} (${DIAS_SEMANA[data.getDay()]})`;
 }
 
 function lerArquivoComoDataUrlBruto(file: File): Promise<string> {
@@ -95,7 +117,7 @@ async function compartilharVistoria(vistoria: VistoriaObra) {
   const resumo = vistoria.itens
     .map(
       (it, i) =>
-        `${i + 1}. ${it.local} - ${it.descricao} (prazo: ${it.prazo ? it.prazo.split("-").reverse().join("/") : "a definir"})`
+        `${i + 1}. ${it.local} - ${it.descricao} (prazo: ${it.prazo ? formatarDataComDia(it.prazo) : "a definir"})`
     )
     .join("\n");
   const texto = `Vistoria de obra - ${vistoria.obraNome}\n${vistoria.itens.length} pendência(s):\n${resumo}`;
@@ -410,7 +432,7 @@ export function VistoriaContent({
         description="Registre pendências com foto, prazo e responsável — e envie a Atividade por WhatsApp para quem vai executar."
       />
 
-      <HorizontalScrollTabs className="mb-5">
+      <HorizontalScrollTabs sticky ariaLabel="Abas de vistoria" className="mb-5">
         <HorizontalTab active={aba === "nova"} onClick={() => setAba("nova")}
           className={aba === "nova" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
           Nova vistoria
@@ -496,7 +518,7 @@ export function VistoriaContent({
                   </label>
                 </div>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <label className="block">
                     <span className="text-xs font-medium text-slate-500">Equipe</span>
                     <select
@@ -510,22 +532,6 @@ export function VistoriaContent({
                           {eq}
                         </option>
                       ))}
-                    </select>
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-500">Prioridade</span>
-                    <select
-                      value={item.prioridade}
-                      onChange={(e) =>
-                        atualizarItem(item.id, {
-                          prioridade: e.target.value as PendenciaVistoria["prioridade"],
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    >
-                      <option value="Baixa">Baixa</option>
-                      <option value="Média">Média</option>
-                      <option value="Alta">Alta</option>
                     </select>
                   </label>
                   <label className="block">
@@ -835,7 +841,7 @@ export function VistoriaContent({
                                 />
                               </label>
                             </div>
-                            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
                               <label className="block">
                                 <span className="text-xs font-medium text-slate-500">Equipe</span>
                                 <select
@@ -849,22 +855,6 @@ export function VistoriaContent({
                                       {eq}
                                     </option>
                                   ))}
-                                </select>
-                              </label>
-                              <label className="block">
-                                <span className="text-xs font-medium text-slate-500">Prioridade</span>
-                                <select
-                                  value={item.prioridade}
-                                  onChange={(e) =>
-                                    atualizarItemRascunho(item.id, {
-                                      prioridade: e.target.value as PendenciaVistoria["prioridade"],
-                                    })
-                                  }
-                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                                >
-                                  <option value="Baixa">Baixa</option>
-                                  <option value="Média">Média</option>
-                                  <option value="Alta">Alta</option>
                                 </select>
                               </label>
                               <label className="block">
@@ -925,7 +915,7 @@ export function VistoriaContent({
                               </div>
                               <p className="mt-1 text-xs text-slate-500">{item.descricao}</p>
                               <p className="mt-1 text-xs text-slate-400">
-                                Prazo: {item.prazo ? item.prazo.split("-").reverse().join("/") : "-"} · Responsável:{" "}
+                                Prazo: {item.prazo ? formatarDataComDia(item.prazo) : "-"} · Responsável:{" "}
                                 {item.responsavel || "-"}
                               </p>
                               {(item.foto || item.fotoDepois) && (
@@ -1014,7 +1004,72 @@ export function VistoriaContent({
             </button>
           </div>
 
-          <Card className="overflow-x-auto p-0">
+          {/* Mobile: dias empilhados em cards — mais fácil de ler e tocar do
+              que rolar a tabela de lado num celular. */}
+          <div className="flex flex-col gap-3 lg:hidden">
+            {diasSemana.map((dia) => {
+              const previstos = todosItens.filter((it) => it.prazo === dia.iso);
+              const realizados = todosItens.filter(
+                (it) =>
+                  it.status === "Concluído" &&
+                  it.concluidoEm &&
+                  it.concluidoEm.slice(0, 10) === dia.iso
+              );
+              if (previstos.length === 0 && realizados.length === 0) return null;
+              return (
+                <Card
+                  key={dia.iso}
+                  className={`p-3 ${dia.iso === hojeISO ? "bg-blue-50/40 ring-1 ring-blue-300" : ""}`}
+                >
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">
+                    {dia.nome} · {dia.diaMes}
+                    {dia.iso === hojeISO && <span className="ml-1.5 text-blue-600">(hoje)</span>}
+                  </p>
+                  {previstos.length > 0 && (
+                    <div className="mb-2">
+                      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-600">
+                        Previsto
+                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        {previstos.map((it) => (
+                          <button
+                            key={it.id}
+                            type="button"
+                            onClick={() => setItemSelecionado(it)}
+                            className="rounded-lg bg-amber-50 px-3 py-2 text-left text-xs font-medium text-amber-700 active:bg-amber-100"
+                          >
+                            {it.local || it.descricao}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {realizados.length > 0 && (
+                    <div>
+                      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-emerald-600">
+                        Realizado
+                      </p>
+                      <div className="flex flex-col gap-1.5">
+                        {realizados.map((it) => (
+                          <button
+                            key={it.id}
+                            type="button"
+                            onClick={() => setItemSelecionado(it)}
+                            className="rounded-lg bg-emerald-50 px-3 py-2 text-left text-xs font-medium text-emerald-700 active:bg-emerald-100"
+                          >
+                            {it.local || it.descricao}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Desktop/tablet: grade semanal completa, com rolagem lateral se precisar. */}
+          <Card className="hidden overflow-x-auto p-0 lg:block">
             <table className="w-full min-w-[720px] border-collapse text-xs">
               <thead>
                 <tr>
@@ -1133,7 +1188,6 @@ export function VistoriaContent({
 
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   {itemSelecionado.equipe && <Badge variant="default">{itemSelecionado.equipe}</Badge>}
-                  <Badge variant="default">Prioridade {itemSelecionado.prioridade}</Badge>
                   <Badge variant={badgeVariant(statusEfetivo(itemSelecionado, hojeISO))}>
                     {statusEfetivo(itemSelecionado, hojeISO)}
                   </Badge>
@@ -1145,7 +1199,7 @@ export function VistoriaContent({
                   <p>
                     Prazo:{" "}
                     {itemSelecionado.prazo
-                      ? itemSelecionado.prazo.split("-").reverse().join("/")
+                      ? formatarDataComDia(itemSelecionado.prazo)
                       : "a definir"}
                   </p>
                   <p>Responsável: {itemSelecionado.responsavel || "-"}</p>
