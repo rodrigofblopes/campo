@@ -1,6 +1,17 @@
 import type { PendenciaVistoria, VistoriaObra } from "./vistoria-types";
 import { statusEfetivo } from "./vistoria-types";
 
+const URL_BASE = "https://campo-one.vercel.app";
+
+/**
+ * Link da vistoria da obra no app — desenhado no rodapé das imagens
+ * geradas pra WhatsApp, assim quem recebe sabe onde acompanhar a demanda
+ * completa de atividades (a imagem sozinha é só um recorte do momento).
+ */
+function linkVistoria(obraId: string): string {
+  return `${URL_BASE}/vistoria/${obraId}`;
+}
+
 function formatarDataBr(iso: string): string {
   if (!iso) return "-";
   const [y, m, d] = iso.split("-");
@@ -180,7 +191,10 @@ export async function gerarImagemPendencia(
 
   ctx.fillStyle = "#94a3b8";
   ctx.font = "400 24px sans-serif";
-  ctx.fillText("Gerado pelo app Campo · Steel Frame", 48, H - 40);
+  ctx.fillText("Gerado pelo app Campo · Steel Frame", 48, H - 62);
+  ctx.fillStyle = "#2563eb";
+  ctx.font = "600 24px sans-serif";
+  ctx.fillText(`Acompanhe em ${linkVistoria(vistoria.obraId)}`, 48, H - 32);
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -269,7 +283,7 @@ async function gerarImagemBase(
   // qual é a atividade só olhando a miniatura no WhatsApp.
   const itemH = 340;
   const itemGap = 28;
-  const footerH = 70;
+  const footerH = 92;
   const H = headerH + itens.length * (itemH + itemGap) + footerH;
 
   const canvas = document.createElement("canvas");
@@ -413,7 +427,12 @@ async function gerarImagemBase(
   ctx.fillStyle = "#94a3b8";
   ctx.font = "400 22px sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("Gerado pelo app Campo · Steel Frame", W / 2, canvas.height - 30);
+  ctx.fillText("Gerado pelo app Campo · Steel Frame", W / 2, canvas.height - 52);
+  if (vistoria.obraId) {
+    ctx.fillStyle = "#2563eb";
+    ctx.font = "600 22px sans-serif";
+    ctx.fillText(`Acompanhe em ${linkVistoria(vistoria.obraId)}`, W / 2, canvas.height - 24);
+  }
   ctx.textAlign = "left";
 
   return new Promise((resolve, reject) => {
@@ -558,6 +577,7 @@ function legendaFiltro(filtroEquipe: string, filtroStatus: string): string {
  * para mandar de uma vez só o recorte que está sendo visto na tela.
  */
 export async function gerarImagemFiltrada(
+  obraId: string,
   obraNome: string,
   itens: PendenciaVistoria[],
   filtroEquipe: string,
@@ -565,7 +585,7 @@ export async function gerarImagemFiltrada(
 ): Promise<Blob> {
   const vistoriaSintetica: VistoriaObra = {
     id: "filtro",
-    obraId: "",
+    obraId,
     obraNome,
     responsavelVistoria: "",
     data: new Date().toISOString().slice(0, 10),
@@ -591,12 +611,13 @@ export function nomeArquivoImagemFiltrada(obraNome: string): string {
  * vistoria.
  */
 export async function compartilharImagemFiltrada(
+  obraId: string,
   obraNome: string,
   itens: PendenciaVistoria[],
   filtroEquipe: string,
   filtroStatus: string
 ): Promise<void> {
-  const blob = await gerarImagemFiltrada(obraNome, itens, filtroEquipe, filtroStatus);
+  const blob = await gerarImagemFiltrada(obraId, obraNome, itens, filtroEquipe, filtroStatus);
   const fileName = nomeArquivoImagemFiltrada(obraNome);
   const file = new File([blob], fileName, { type: "image/jpeg" });
   const legenda = legendaFiltro(filtroEquipe, filtroStatus);

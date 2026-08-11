@@ -404,6 +404,19 @@ export function VistoriaContent({
     setRascunho((r) => (r ? { ...r, itens: r.itens.filter((it) => it.id !== itemId) } : r));
   }
 
+  // Excluir foto ou pendência não tem desfazer dentro da edição — confirma
+  // antes pra evitar clique acidental.
+  function handleRemoverFotoRascunho(itemId: string, campo: "foto" | "fotoDepois") {
+    const msg = campo === "foto" ? "Remover a foto (antes)?" : "Remover a foto de conclusão?";
+    if (!window.confirm(msg)) return;
+    atualizarItemRascunho(itemId, { [campo]: null });
+  }
+
+  function handleRemoverItemRascunho(itemId: string) {
+    if (!window.confirm("Excluir esta pendência? Essa ação não pode ser desfeita.")) return;
+    removerItemRascunho(itemId);
+  }
+
   function adicionarItemRascunho() {
     setRascunho((r) => (r ? { ...r, itens: [...r.itens, novaPendenciaDraft()] } : r));
   }
@@ -714,7 +727,13 @@ export function VistoriaContent({
             <button
               type="button"
               onClick={() =>
-                compartilharImagemFiltrada(obraMeta.nome, itensFiltradosGlobal, filtroEquipe, filtroStatus)
+                compartilharImagemFiltrada(
+                  obraMeta.id,
+                  obraMeta.nome,
+                  itensFiltradosGlobal,
+                  filtroEquipe,
+                  filtroStatus
+                )
               }
               className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700"
             >
@@ -924,7 +943,7 @@ export function VistoriaContent({
                                     />
                                     <button
                                       type="button"
-                                      onClick={() => atualizarItemRascunho(item.id, { foto: null })}
+                                      onClick={() => handleRemoverFotoRascunho(item.id, "foto")}
                                       aria-label="Remover foto"
                                       className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
                                     >
@@ -958,7 +977,7 @@ export function VistoriaContent({
                                     />
                                     <button
                                       type="button"
-                                      onClick={() => atualizarItemRascunho(item.id, { fotoDepois: null })}
+                                      onClick={() => handleRemoverFotoRascunho(item.id, "fotoDepois")}
                                       aria-label="Remover foto de conclusão"
                                       className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
                                     >
@@ -986,7 +1005,7 @@ export function VistoriaContent({
                             <div className="mt-3 flex justify-end">
                               <button
                                 type="button"
-                                onClick={() => removerItemRascunho(item.id)}
+                                onClick={() => handleRemoverItemRascunho(item.id)}
                                 className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
                               >
                                 <Trash2 size={13} />

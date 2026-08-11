@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
 import { Badge, Card } from "@/components/ui";
 import { EQUIPES } from "@/lib/vistoria-types";
-import type { Profissional, RegistroRdo } from "@/lib/rdo-types";
+import type { PrecoEquipe, Profissional, RegistroRdo } from "@/lib/rdo-types";
 import {
   calcularRupPorProfissional,
   criarProfissional,
@@ -12,8 +12,10 @@ import {
   excluirProfissional,
   excluirRegistroRdo,
   gerarComentarioIA,
+  listarPrecosEquipe,
   listarProfissionais,
   listarRegistrosRdo,
+  salvarPrecoEquipe,
 } from "@/lib/rdo-storage";
 
 function novoId(): string {
@@ -47,7 +49,14 @@ export function RdoSimplificadoContent({
 }) {
   const [profissionais, setProfissionais] = useState<Profissional[]>([]);
   const [registros, setRegistros] = useState<RegistroRdo[]>([]);
+  const [precosEquipe, setPrecosEquipe] = useState<PrecoEquipe[]>([]);
   const [carregando, setCarregando] = useState(true);
+
+  // ---- preço da diária por equipe ----
+  const [precosEditando, setPrecosEditando] = useState<
+    Record<string, { ajudante: string; profissional: string }>
+  >({});
+  const [salvandoPrecoEquipe, setSalvandoPrecoEquipe] = useState<string | null>(null);
 
   // ---- novo profissional ----
   const [novoNome, setNovoNome] = useState("");
@@ -72,18 +81,65 @@ export function RdoSimplificadoContent({
   useEffect(() => {
     let ativo = true;
     setCarregando(true);
-    Promise.all([listarProfissionais(obraId), listarRegistrosRdo(obraId)]).then(
-      ([profs, regs]) => {
-        if (!ativo) return;
-        setProfissionais(profs);
-        setRegistros(regs);
-        setCarregando(false);
-      }
-    );
+    Promise.all([
+      listarProfissionais(obraId),
+      listarRegistrosRdo(obraId),
+      listarPrecosEquipe(obraId),
+    ]).then(([profs, regs, precos]) => {
+      if (!ativo) return;
+      setProfissionais(profs);
+      setRegistros(regs);
+      setPrecosEquipe(precos);
+      setCarregando(false);
+    });
     return () => {
       ativo = false;
     };
   }, [obraId]);
+
+  const precoEquipeMap = useMemo(() => {
+    const mapa = new Map<string, PrecoEquipe>();
+    for (const p of precosEquipe) mapa.set(p.equipe, p);
+    return mapa;
+  }, [precosEquipe]);
+
+  function valorEditandoPreco(eq: string): { ajudante: string; profissional: string } {
+    if (precosEditando[eq]) return precosEditando[eq];
+    const salvo = precoEquipeMap.get(eq);
+    return {
+      ajudante: salvo && salvo.precoDiariaAjudante > 0 ? String(salvo.precoDiariaAjudante) : "",
+      profissional:
+        salvo && salvo.precoDiariaProfissional > 0 ? String(salvo.precoDiariaProfissional) : "",
+    };
+  }
+
+  function atualizarPrecoEditando(eq: string, campo: "ajudante" | "profissional", valor: string) {
+    setPrecosEditando((atual) => ({
+      ...atual,
+      [eq]: { ...valorEditandoPreco(eq), ...atual[eq], [campo]: valor },
+    }));
+  }
+
+  async function handleSalvarPrecoEquipe(eq: string) {
+    const valores = valorEditandoPreco(eq);
+    setSalvandoPrecoEquipe(eq);
+    try {
+      const preco: PrecoEquipe = {
+        obraId,
+        equipe: eq,
+        precoDiariaAjudante: Number(valores.ajudante) || 0,
+        precoDiariaProfissional: Number(valores.profissional) || 0,
+      };
+      const ok = await salvarPrecoEquipe(preco);
+      if (!ok) {
+        alert("Não foi possível salvar o preço agora. Tente novamente.");
+        return;
+      }
+      setPrecosEquipe((lista) => [...lista.filter((p) => p.equipe !== eq), preco]);
+    } finally {
+      setSalvandoPrecoEquipe(null);
+    }
+  }
 
   const profissionaisPorEquipe = useMemo(() => {
     const mapa = new Map<string, Profissional[]>();
@@ -336,6 +392,60 @@ export function RdoSimplificadoContent({
       </Card>
 
       <Card>
+        <h3 className="mb-1 text-sm font-bold text-slate-900">Preço da diária por equipe</h3>
+        <p className="mb-3 text-xs text-slate-500">
+          O ajudante e o profissional de cada equipe têm diária de valor diferente (ex.: ajudante de
+          pedreiro ≠ ajudante de pintor). Configure aqui uma vez por equipe — o valor é preenchido
+          automaticamente ao registrar um serviço, mas continua editável se precisar de exceção.
+        </p>
+        <div className="space-y-2">
+          {EQUIPES.map((eq) => {
+            const valores = valorEditandoPreco(eq);
+            return (
+              <div
+                key={eq}
+                className="grid grid-cols-1 items-end gap-2 rounded-lg border border-slate-200 p-3 sm:grid-cols-[1fr_auto_auto_auto]"
+              >
+                <span className="text-sm font-medium text-slate-700">{eq}</span>
+                <label className="block">
+                  <span className="text-xs font-medium text-slate-500">Ajudante (R$/diária)</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={valores.ajudante}
+                    onChange={(e) => atualizarPrecoEditando(eq, "ajudante", e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-32"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-xs font-medium text-slate-500">Profissional (R$/diária)</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={valores.profissional}
+                    onChange={(e) => atualizarPrecoEditando(eq, "profissional", e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-32"
+                  />
+                </label>
+                <button
+                  type="button"
+                  disabled={salvandoPrecoEquipe === eq}
+                  onClick={() => handleSalvarPrecoEquipe(eq)}
+                  className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-white hover:bg-slate-900 disabled:opacity-50"
+                >
+                  {salvandoPrecoEquipe === eq ? "Salvando..." : "Salvar"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      <Card>
         <h3 className="mb-1 text-sm font-bold text-slate-900">Registrar serviço executado</h3>
         <p className="mb-3 text-xs text-slate-500">
           Cada registro vira um lançamento de RUP e um comentário pro RDO documental.
@@ -356,8 +466,21 @@ export function RdoSimplificadoContent({
             <select
               value={equipe}
               onChange={(e) => {
-                setEquipe(e.target.value);
+                const novaEquipe = e.target.value;
+                setEquipe(novaEquipe);
                 setProfissionaisIds([]);
+                // Preço de diária é por equipe (ajudante de pedreiro difere
+                // de ajudante de pintor, por exemplo) — ao trocar a equipe,
+                // preenche automaticamente com o preço configurado pra ela.
+                const preco = precoEquipeMap.get(novaEquipe);
+                setPrecoDiariaAjudante(
+                  preco && preco.precoDiariaAjudante > 0 ? String(preco.precoDiariaAjudante) : ""
+                );
+                setPrecoDiariaProfissional(
+                  preco && preco.precoDiariaProfissional > 0
+                    ? String(preco.precoDiariaProfissional)
+                    : ""
+                );
               }}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
             >

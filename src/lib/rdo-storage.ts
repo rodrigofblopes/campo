@@ -1,4 +1,4 @@
-import type { Profissional, RegistroRdo } from "./rdo-types";
+import type { PrecoEquipe, Profissional, RegistroRdo } from "./rdo-types";
 
 export async function listarProfissionais(obraId: string): Promise<Profissional[]> {
   try {
@@ -66,6 +66,36 @@ export async function criarRegistroRdo(r: RegistroRdo): Promise<boolean> {
 export async function excluirRegistroRdo(id: string): Promise<boolean> {
   try {
     const res = await fetch(`/api/rdo/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Preço da diária de ajudante/profissional é configurado por equipe (o
+// ajudante de pedreiro tem um valor, o pedreiro outro; o ajudante de pintor
+// tem um valor diferente do ajudante de pedreiro, e assim por diante) — não
+// existe um preço único geral.
+export async function listarPrecosEquipe(obraId: string): Promise<PrecoEquipe[]> {
+  try {
+    const res = await fetch(`/api/precos-equipe?obraId=${encodeURIComponent(obraId)}`, {
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { precos?: PrecoEquipe[] };
+    return data.precos ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function salvarPrecoEquipe(p: PrecoEquipe): Promise<boolean> {
+  try {
+    const res = await fetch("/api/precos-equipe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(p),
+    });
     return res.ok;
   } catch {
     return false;
