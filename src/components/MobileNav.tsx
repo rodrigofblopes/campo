@@ -4,11 +4,11 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BarChart3,
+  Calendar,
+  Camera,
   ChevronLeft,
   ClipboardList,
-  Home,
-  Layers,
+  Clock,
   Menu,
   MoreHorizontal,
   X,
@@ -18,29 +18,47 @@ import { useObra } from "@/context/ObraContext";
 import { hrefObra } from "@/lib/grupos-nav";
 
 function bottomLinks(obraId: string) {
-  const base = hrefObra(obraId);
-  const frentes = hrefObra(obraId, "/frentes");
   return [
-    { href: base, label: "Início", icon: Home, match: (p: string) => p === base },
     {
-      href: hrefObra(obraId, "/resumo"),
-      label: "Resumo",
-      icon: BarChart3,
-      match: (p: string) => p === hrefObra(obraId, "/resumo"),
+      href: hrefObra(obraId, "/vistoria"),
+      label: "Vistoria",
+      icon: Camera,
+      match: (p: string) => p === hrefObra(obraId, "/vistoria"),
     },
     {
-      href: frentes,
-      label: "Frentes",
-      icon: Layers,
-      match: (p: string) => p.startsWith(frentes),
+      href: hrefObra(obraId, "/historico"),
+      label: "Histórico",
+      icon: Clock,
+      match: (p: string) => p === hrefObra(obraId, "/historico"),
     },
     {
-      href: hrefObra(obraId, "/producao"),
-      label: "Conferência",
+      href: hrefObra(obraId, "/rdo"),
+      label: "RDO",
       icon: ClipboardList,
-      match: (p: string) => p === hrefObra(obraId, "/producao"),
+      match: (p: string) => p === hrefObra(obraId, "/rdo"),
+    },
+    {
+      href: hrefObra(obraId, "/pcp"),
+      label: "PCP",
+      icon: Calendar,
+      match: (p: string) => p === hrefObra(obraId, "/pcp"),
     },
   ] as const;
+}
+
+/** "Mais" (que abre o menu completo) fica marcado como ativo quando a
+ * pessoa está em qualquer página de Produtividade — essa área só existe
+ * dentro do menu completo no mobile, não tem ícone fixo na barra. */
+function emProdutividade(pathname: string, obraId: string): boolean {
+  const base = hrefObra(obraId);
+  if (pathname === base) return true;
+  if (pathname === hrefObra(obraId, "/resumo")) return true;
+  if (pathname === hrefObra(obraId, "/relatorios")) return true;
+  if (pathname === hrefObra(obraId, "/estimativas")) return true;
+  if (pathname.startsWith(hrefObra(obraId, "/frentes"))) return true;
+  if (pathname === hrefObra(obraId, "/producao")) return true;
+  if (pathname === hrefObra(obraId, "/progresso")) return true;
+  return false;
 }
 
 function backHref(pathname: string, obraId: string): string | null {
@@ -172,7 +190,7 @@ export function MobileDrawer({
 export function MobileBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
   const { obraId } = useObra();
-  const maisAtivo = pathname === hrefObra(obraId, "/relatorios");
+  const maisAtivo = emProdutividade(pathname, obraId);
   const links = bottomLinks(obraId);
 
   return (
