@@ -146,6 +146,7 @@ export function VistoriaContent({
 
   // ---- histórico ----
   const [vistorias, setVistorias] = useState<VistoriaObra[]>([]);
+  const [fotoAmpliada, setFotoAmpliada] = useState<string | null>(null);
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [filtroEquipe, setFiltroEquipe] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
@@ -1106,16 +1107,34 @@ export function VistoriaContent({
                               {(item.foto || item.fotoDepois) && (
                                 <div className="mt-2 flex gap-2">
                                   {item.foto && (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img src={item.foto} alt="Antes" className="h-16 w-16 rounded-lg object-cover" />
+                                    <button
+                                      type="button"
+                                      onClick={() => setFotoAmpliada(item.foto)}
+                                      className="overflow-hidden rounded-lg"
+                                      aria-label="Ampliar foto antes"
+                                    >
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={item.foto}
+                                        alt="Antes"
+                                        className="h-16 w-16 rounded-lg object-cover transition-transform hover:scale-105"
+                                      />
+                                    </button>
                                   )}
                                   {item.fotoDepois && (
-                                    // eslint-disable-next-line @next/next/no-img-element
-                                    <img
-                                      src={item.fotoDepois}
-                                      alt="Depois"
-                                      className="h-16 w-16 rounded-lg object-cover"
-                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setFotoAmpliada(item.fotoDepois)}
+                                      className="overflow-hidden rounded-lg"
+                                      aria-label="Ampliar foto depois"
+                                    >
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={item.fotoDepois}
+                                        alt="Depois"
+                                        className="h-16 w-16 rounded-lg object-cover transition-transform hover:scale-105"
+                                      />
+                                    </button>
                                   )}
                                 </div>
                               )}
@@ -1354,6 +1373,29 @@ export function VistoriaContent({
 
       {aba === "rdo" && (
         <RdoSimplificadoContent obraId={obraId} obraNome={obraMeta.nome} />
+      )}
+
+      {fotoAmpliada && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setFotoAmpliada(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setFotoAmpliada(null)}
+            aria-label="Fechar"
+            className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          >
+            <X size={22} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={fotoAmpliada}
+            alt="Foto ampliada"
+            className="max-h-full max-w-full rounded-lg object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </>
   );
