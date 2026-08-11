@@ -8,6 +8,7 @@ export const EQUIPES = [
   "Drywall",
   "Pintura",
   "Esquadrias",
+  "Piso Vinílico",
   "Acabamento",
   "Civil",
   "Outros",
