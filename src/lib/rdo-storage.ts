@@ -79,8 +79,8 @@ export async function gerarComentarioIA(dados: {
   equipe: string;
   servico: string;
   areaM2: number;
-  diarias: number;
-  precoDiaria: number;
+  diariasAjudante: number;
+  diariasProfissional: number;
   profissionaisNomes: string[];
   data: string;
 }): Promise<string | null> {
@@ -130,9 +130,12 @@ export function calcularRupPorProfissional(
   for (const r of registros) {
     const participantes = r.profissionaisIds.filter((id) => porId.has(id));
     if (participantes.length === 0) continue;
-    const diariasPorPessoa = r.diarias / participantes.length;
+    const diariasTotaisRegistro = r.diariasAjudante + r.diariasProfissional;
+    const custoTotalRegistro =
+      r.diariasAjudante * r.precoDiariaAjudante + r.diariasProfissional * r.precoDiariaProfissional;
+    const diariasPorPessoa = diariasTotaisRegistro / participantes.length;
     const areaPorPessoa = r.areaM2 / participantes.length;
-    const custoPorPessoa = diariasPorPessoa * r.precoDiaria;
+    const custoPorPessoa = custoTotalRegistro / participantes.length;
     for (const id of participantes) {
       const acc = porId.get(id)!;
       acc.totalDiarias += diariasPorPessoa;

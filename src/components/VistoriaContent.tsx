@@ -388,8 +388,32 @@ export function VistoriaContent({
     );
   }
 
+  // Troca ou remove a foto (antes/depois) de uma pendência dentro do
+  // rascunho de edição — nada é salvo até "Salvar alterações".
+  async function handleFotoRascunho(
+    itemId: string,
+    campo: "foto" | "fotoDepois",
+    file: File | undefined
+  ) {
+    if (!file) return;
+    const dataUrl = await lerArquivoComoDataUrl(file);
+    atualizarItemRascunho(itemId, { [campo]: dataUrl });
+  }
+
+  function removerItemRascunho(itemId: string) {
+    setRascunho((r) => (r ? { ...r, itens: r.itens.filter((it) => it.id !== itemId) } : r));
+  }
+
+  function adicionarItemRascunho() {
+    setRascunho((r) => (r ? { ...r, itens: [...r.itens, novaPendenciaDraft()] } : r));
+  }
+
   async function salvarEdicaoVistoria() {
     if (!rascunho) return;
+    if (rascunho.itens.length === 0) {
+      alert("A vistoria precisa ter ao menos uma pendência. Exclua a vistoria inteira se não fizer mais sentido.");
+      return;
+    }
     setSalvandoEdicao(true);
     try {
       const atualizada = rascunho;
@@ -886,8 +910,100 @@ export function VistoriaContent({
                                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                               />
                             </label>
+
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <span className="text-xs font-medium text-slate-500">Foto (antes)</span>
+                                {item.foto ? (
+                                  <div className="relative mt-2 inline-block">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={item.foto}
+                                      alt="Foto da pendência"
+                                      className="h-28 w-28 rounded-lg object-cover"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => atualizarItemRascunho(item.id, { foto: null })}
+                                      aria-label="Remover foto"
+                                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <p className="mt-1 text-xs text-slate-400">Sem foto.</p>
+                                )}
+                                <label className="mt-2 flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100">
+                                  <Camera size={13} />
+                                  {item.foto ? "Trocar foto" : "Adicionar foto"}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) => handleFotoRascunho(item.id, "foto", e.target.files?.[0])}
+                                  />
+                                </label>
+                              </div>
+
+                              <div>
+                                <span className="text-xs font-medium text-slate-500">Foto (depois / conclusão)</span>
+                                {item.fotoDepois ? (
+                                  <div className="relative mt-2 inline-block">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={item.fotoDepois}
+                                      alt="Foto de conclusão"
+                                      className="h-28 w-28 rounded-lg object-cover"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => atualizarItemRascunho(item.id, { fotoDepois: null })}
+                                      aria-label="Remover foto de conclusão"
+                                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <p className="mt-1 text-xs text-slate-400">Sem foto.</p>
+                                )}
+                                <label className="mt-2 flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100">
+                                  <Camera size={13} />
+                                  {item.fotoDepois ? "Trocar foto" : "Adicionar foto"}
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                      handleFotoRascunho(item.id, "fotoDepois", e.target.files?.[0])
+                                    }
+                                  />
+                                </label>
+                              </div>
+                            </div>
+
+                            <div className="mt-3 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => removerItemRascunho(item.id)}
+                                className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                              >
+                                <Trash2 size={13} />
+                                Excluir esta pendência
+                              </button>
+                            </div>
                           </div>
                         ))}
+
+                        <button
+                          type="button"
+                          onClick={adicionarItemRascunho}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50"
+                        >
+                          <Plus size={14} />
+                          Adicionar pendência
+                        </button>
 
                         <div className="flex gap-2 pt-1">
                           <button

@@ -61,8 +61,10 @@ export function RdoSimplificadoContent({
   const [servico, setServico] = useState("");
   const [profissionaisIds, setProfissionaisIds] = useState<string[]>([]);
   const [areaM2, setAreaM2] = useState("");
-  const [diarias, setDiarias] = useState("");
-  const [precoDiaria, setPrecoDiaria] = useState("");
+  const [diariasAjudante, setDiariasAjudante] = useState("");
+  const [precoDiariaAjudante, setPrecoDiariaAjudante] = useState("");
+  const [diariasProfissional, setDiariasProfissional] = useState("");
+  const [precoDiariaProfissional, setPrecoDiariaProfissional] = useState("");
   const [comentario, setComentario] = useState("");
   const [gerandoComentario, setGerandoComentario] = useState(false);
   const [salvandoRegistro, setSalvandoRegistro] = useState(false);
@@ -163,8 +165,8 @@ export function RdoSimplificadoContent({
         equipe,
         servico: servico.trim(),
         areaM2: Number(areaM2) || 0,
-        diarias: Number(diarias) || 0,
-        precoDiaria: Number(precoDiaria) || 0,
+        diariasAjudante: Number(diariasAjudante) || 0,
+        diariasProfissional: Number(diariasProfissional) || 0,
         profissionaisNomes: nomes,
         data,
       });
@@ -182,14 +184,26 @@ export function RdoSimplificadoContent({
     setServico("");
     setProfissionaisIds([]);
     setAreaM2("");
-    setDiarias("");
-    setPrecoDiaria("");
+    setDiariasAjudante("");
+    setPrecoDiariaAjudante("");
+    setDiariasProfissional("");
+    setPrecoDiariaProfissional("");
     setComentario("");
   }
 
   async function handleSalvarRegistro() {
-    if (!equipe || !servico.trim() || !areaM2 || !diarias || !precoDiaria) {
-      alert("Preencha equipe, serviço, área, diárias e preço da diária.");
+    const temAjudante = Number(diariasAjudante) > 0;
+    const temProfissional = Number(diariasProfissional) > 0;
+    if (!equipe || !servico.trim() || !areaM2 || (!temAjudante && !temProfissional)) {
+      alert("Preencha equipe, serviço, área e ao menos as diárias de ajudante ou de profissional.");
+      return;
+    }
+    if (temAjudante && !precoDiariaAjudante) {
+      alert("Informe o preço da diária do ajudante.");
+      return;
+    }
+    if (temProfissional && !precoDiariaProfissional) {
+      alert("Informe o preço da diária do profissional.");
       return;
     }
     setSalvandoRegistro(true);
@@ -202,8 +216,10 @@ export function RdoSimplificadoContent({
         servico: servico.trim(),
         profissionaisIds,
         areaM2: Number(areaM2),
-        diarias: Number(diarias),
-        precoDiaria: Number(precoDiaria),
+        diariasAjudante: Number(diariasAjudante) || 0,
+        precoDiariaAjudante: Number(precoDiariaAjudante) || 0,
+        diariasProfissional: Number(diariasProfissional) || 0,
+        precoDiariaProfissional: Number(precoDiariaProfissional) || 0,
         comentario: comentario.trim(),
         criadoEm: new Date().toISOString(),
       };
@@ -397,43 +413,81 @@ export function RdoSimplificadoContent({
           )}
         </div>
 
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          <label className="block">
-            <span className="text-xs font-medium text-slate-500">Área executada (m²)</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={areaM2}
-              onChange={(e) => setAreaM2(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-medium text-slate-500">Diárias</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.5"
-              value={diarias}
-              onChange={(e) => setDiarias(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-          </label>
-          <label className="block">
-            <span className="text-xs font-medium text-slate-500">Preço médio da diária (R$)</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min="0"
-              step="0.01"
-              value={precoDiaria}
-              onChange={(e) => setPrecoDiaria(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-          </label>
+        <label className="mt-3 block">
+          <span className="text-xs font-medium text-slate-500">Área executada (m²)</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="0.01"
+            value={areaM2}
+            onChange={(e) => setAreaM2(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm sm:w-1/2"
+          />
+        </label>
+
+        <p className="mt-3 text-xs font-medium text-slate-500">
+          Diárias por categoria — ajudante e profissional têm valor de diária diferente
+        </p>
+        <div className="mt-1.5 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Ajudante</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500">Diárias</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.5"
+                  value={diariasAjudante}
+                  onChange={(e) => setDiariasAjudante(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500">Preço/diária (R$)</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={precoDiariaAjudante}
+                  onChange={(e) => setPrecoDiariaAjudante(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">Profissional</p>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500">Diárias</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.5"
+                  value={diariasProfissional}
+                  onChange={(e) => setDiariasProfissional(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <label className="block">
+                <span className="text-xs font-medium text-slate-500">Preço/diária (R$)</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  step="0.01"
+                  value={precoDiariaProfissional}
+                  onChange={(e) => setPrecoDiariaProfissional(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              </label>
+            </div>
+          </div>
         </div>
 
         <label className="mt-3 block">
@@ -521,7 +575,8 @@ export function RdoSimplificadoContent({
               const nomes = profissionais
                 .filter((p) => r.profissionaisIds.includes(p.id))
                 .map((p) => p.nome);
-              const custoTotal = r.diarias * r.precoDiaria;
+              const custoTotal =
+                r.diariasAjudante * r.precoDiariaAjudante + r.diariasProfissional * r.precoDiariaProfissional;
               return (
                 <div key={r.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -545,7 +600,21 @@ export function RdoSimplificadoContent({
                     </button>
                   </div>
                   <p className="mt-2 text-xs text-slate-500">
-                    {r.areaM2} m² · {r.diarias} diária(s) · {formatarMoeda(r.precoDiaria)}/diária ·{" "}
+                    {r.areaM2} m²
+                    {r.diariasAjudante > 0 && (
+                      <>
+                        {" · "}
+                        {r.diariasAjudante} diária(s) ajudante ({formatarMoeda(r.precoDiariaAjudante)}/diária)
+                      </>
+                    )}
+                    {r.diariasProfissional > 0 && (
+                      <>
+                        {" · "}
+                        {r.diariasProfissional} diária(s) profissional (
+                        {formatarMoeda(r.precoDiariaProfissional)}/diária)
+                      </>
+                    )}
+                    {" · "}
                     {formatarMoeda(custoTotal)} total
                   </p>
                   {r.comentario && (
