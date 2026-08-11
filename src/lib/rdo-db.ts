@@ -41,6 +41,15 @@ function ensureTables(): Promise<void> {
           criado_em TEXT NOT NULL
         )
       `;
+      // Migração: ajudante e profissional têm diária com valor diferente,
+      // então passamos a lançar as duas categorias separadas. As colunas
+      // legadas "diarias"/"preco_diaria" continuam existindo (e sendo
+      // preenchidas com o total/média) só pra não quebrar registros antigos
+      // que ainda não tinham essa divisão.
+      await sql`ALTER TABLE registros_rdo ADD COLUMN IF NOT EXISTS diarias_ajudante DOUBLE PRECISION NOT NULL DEFAULT 0`;
+      await sql`ALTER TABLE registros_rdo ADD COLUMN IF NOT EXISTS preco_diaria_ajudante DOUBLE PRECISION NOT NULL DEFAULT 0`;
+      await sql`ALTER TABLE registros_rdo ADD COLUMN IF NOT EXISTS diarias_profissional DOUBLE PRECISION NOT NULL DEFAULT 0`;
+      await sql`ALTER TABLE registros_rdo ADD COLUMN IF NOT EXISTS preco_diaria_profissional DOUBLE PRECISION NOT NULL DEFAULT 0`;
     })();
   }
   return tablesReady;
@@ -59,6 +68,33 @@ function rowToProfissional(row: any): Profissional {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToRegistro(row: any): RegistroRdo {
+  const diariasAjudante = Number(row.diarias_ajudante ?? 0);
+  const diariasProfissional = Number(row.diarias_profissional ?? 0);
+  // Registros criados antes da divisão ajudante/profissional só têm as
+  // colunas legadas preenchidas — nesse caso, joga tudo como "profissional"
+  // (categoria mais comum nos apontamentos antigos) pra não perder o
+  // histórico de diárias/custo já lançado.
+  const semDivisao = diariasAjudante === 0 && diariasProfissional === 0 && Number(row.diarias ?? 0) > 0;
+  if (semDivisao) {
+    return {
+      id: row.id,
+      obraId: row.obra_id,
+      data: row.data,
+      equipe: row.equipe,
+      servico: row.servico,
+      profissionaisIds:
+        typeof row.profissionais_ids === "string"
+          ? JSON.parse(row.profissionais_ids)
+          : row.profissionais_ids,
+      areaM2: Number(row.area_m2),
+      diariasAjudante: 0,
+      precoDiariaAjudante: 0,
+      diariasProfissional: Number(row.diarias),
+      precoDiariaProfissional: Number(row.preco_diaria),
+      comentario: row.comentario,
+      criadoEm: row.criado_em,
+    };
+  }
   return {
     id: row.id,
     obraId: row.obra_id,
@@ -70,8 +106,10 @@ function rowToRegistro(row: any): RegistroRdo {
         ? JSON.parse(row.profissionais_ids)
         : row.profissionais_ids,
     areaM2: Number(row.area_m2),
-    diarias: Number(row.diarias),
-    precoDiaria: Number(row.preco_diaria),
+    diariasAjudante,
+    precoDiariaAjudante: Number(row.preco_diaria_ajudante ?? 0),
+    diariasProfissional,
+    precoDiariaProfissional: Number(row.preco_diaria_profissional ?? 0),
     comentario: row.comentario,
     criadoEm: row.criado_em,
   };
@@ -112,7 +150,10 @@ export async function listarRegistrosRdoDb(obraId: string): Promise<RegistroRdo[
   await ensureTables();
   const sql = getSql();
   const rows = await sql`
-    SELECT id, obra_id, data, equipe, servico, profissionais_ids, area_m2, diarias, preco_diaria, comentario, criado_em
+    SELECT id, obra_id, data, equipe, servico, profissionais_ids, area_m2,
+           diarias, preco_diaria,
+           diarias_ajudante, preco_diaria_ajudante, diarias_profissional, preco_diaria_profissional,
+           comentario, criado_em
     FROM registros_rdo
     WHERE obra_id = ${obraId}
     ORDER BY data DESC, criado_em DESC
@@ -123,13 +164,21 @@ export async function listarRegistrosRdoDb(obraId: string): Promise<RegistroRdo[
 export async function criarRegistroRdoDb(r: RegistroRdo): Promise<void> {
   await ensureTables();
   const sql = getSql();
+  const diarias = r.diariasAjudante + r.diariasProfissional;
+  const custoTotal = r.diariasAjudante * r.precoDiariaAjudante + r.diariasProfissional * r.precoDiariaProfissional;
+  const precoDiariaMedio = diarias > 0 ? custoTotal / diarias : 0;
   await sql`
     INSERT INTO registros_rdo (
-      id, obra_id, data, equipe, servico, profissionais_ids, area_m2, diarias, preco_diaria, comentario, criado_em
+      id, obra_id, data, equipe, servico, profissionais_ids, area_m2,
+      diarias, preco_diaria,
+      diarias_ajudante, preco_diaria_ajudante, diarias_profissional, preco_diaria_profissional,
+      comentario, criado_em
     )
     VALUES (
       ${r.id}, ${r.obraId}, ${r.data}, ${r.equipe}, ${r.servico},
-      ${JSON.stringify(r.profissionaisIds)}, ${r.areaM2}, ${r.diarias}, ${r.precoDiaria},
+      ${JSON.stringify(r.profissionaisIds)}, ${r.areaM2},
+      ${diarias}, ${precoDiariaMedio},
+      ${r.diariasAjudante}, ${r.precoDiariaAjudante}, ${r.diariasProfissional}, ${r.precoDiariaProfissional},
       ${r.comentario}, ${r.criadoEm}
     )
     ON CONFLICT (id) DO NOTHING
