@@ -1,5 +1,5 @@
 import { neon } from "@neondatabase/serverless";
-import type { Profissional, RegistroRdo } from "./rdo-types";
+import type { PrecoEquipe, Profissional, RegistroRdo } from "./rdo-types";
 
 function getSql() {
   const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
@@ -50,6 +50,18 @@ function ensureTables(): Promise<void> {
       await sql`ALTER TABLE registros_rdo ADD COLUMN IF NOT EXISTS preco_diaria_ajudante DOUBLE PRECISION NOT NULL DEFAULT 0`;
       await sql`ALTER TABLE registros_rdo ADD COLUMN IF NOT EXISTS diarias_profissional DOUBLE PRECISION NOT NULL DEFAULT 0`;
       await sql`ALTER TABLE registros_rdo ADD COLUMN IF NOT EXISTS preco_diaria_profissional DOUBLE PRECISION NOT NULL DEFAULT 0`;
+      // Preço de diária de ajudante/profissional varia por equipe (ajudante
+      // de pedreiro difere de ajudante de pintor, por exemplo) — não é um
+      // valor geral. Uma linha por obra+equipe guarda o preço configurado.
+      await sql`
+        CREATE TABLE IF NOT EXISTS precos_equipe (
+          obra_id TEXT NOT NULL,
+          equipe TEXT NOT NULL,
+          preco_diaria_ajudante DOUBLE PRECISION NOT NULL DEFAULT 0,
+          preco_diaria_profissional DOUBLE PRECISION NOT NULL DEFAULT 0,
+          PRIMARY KEY (obra_id, equipe)
+        )
+      `;
     })();
   }
   return tablesReady;
@@ -191,5 +203,38 @@ export async function excluirRegistroRdoDb(id: string): Promise<void> {
   await sql`
     DELETE FROM registros_rdo
     WHERE id = ${id}
+  `;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToPrecoEquipe(row: any): PrecoEquipe {
+  return {
+    obraId: row.obra_id,
+    equipe: row.equipe,
+    precoDiariaAjudante: Number(row.preco_diaria_ajudante ?? 0),
+    precoDiariaProfissional: Number(row.preco_diaria_profissional ?? 0),
+  };
+}
+
+export async function listarPrecosEquipeDb(obraId: string): Promise<PrecoEquipe[]> {
+  await ensureTables();
+  const sql = getSql();
+  const rows = await sql`
+    SELECT obra_id, equipe, preco_diaria_ajudante, preco_diaria_profissional
+    FROM precos_equipe
+    WHERE obra_id = ${obraId}
+  `;
+  return rows.map(rowToPrecoEquipe);
+}
+
+export async function salvarPrecoEquipeDb(p: PrecoEquipe): Promise<void> {
+  await ensureTables();
+  const sql = getSql();
+  await sql`
+    INSERT INTO precos_equipe (obra_id, equipe, preco_diaria_ajudante, preco_diaria_profissional)
+    VALUES (${p.obraId}, ${p.equipe}, ${p.precoDiariaAjudante}, ${p.precoDiariaProfissional})
+    ON CONFLICT (obra_id, equipe) DO UPDATE SET
+      preco_diaria_ajudante = EXCLUDED.preco_diaria_ajudante,
+      preco_diaria_profissional = EXCLUDED.preco_diaria_profissional
   `;
 }

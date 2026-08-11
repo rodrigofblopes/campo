@@ -7,6 +7,21 @@ export interface Profissional {
 }
 
 /**
+ * Preço da diária de ajudante e de profissional para uma equipe (ex.:
+ * ajudante de pedreiro tem um valor, pedreiro outro; ajudante de pintor tem
+ * um valor diferente, pintor outro — o preço não é geral, é por equipe).
+ * Configurado uma vez por obra e reaproveitado ao lançar um RDO: ao
+ * selecionar a equipe, os preços são preenchidos automaticamente (mas
+ * continuam editáveis no lançamento, para eventuais exceções).
+ */
+export interface PrecoEquipe {
+  obraId: string;
+  equipe: string;
+  precoDiariaAjudante: number;
+  precoDiariaProfissional: number;
+}
+
+/**
  * Um lançamento de RDO Simplificado: uma equipe executando um serviço num
  * dia, com quantidade de diárias e área — a base pra calcular RUP
  * (diárias ÷ área) e custo por m² sem depender da planilha externa.
