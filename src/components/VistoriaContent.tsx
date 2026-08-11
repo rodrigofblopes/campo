@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Camera, ChevronLeft, ChevronRight, Pencil, Plus, Send, Trash2, X } from "lucide-react";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScrollTabs";
 import { RdoSimplificadoContent } from "@/components/RdoSimplificadoContent";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
 import { compartilharImagemVistoria, compartilharImagemFiltrada } from "@/lib/image-vistoria";
+import { hrefObra } from "@/lib/grupos-nav";
 import {
   contarPendencias,
   getVistorias,
@@ -124,11 +126,17 @@ async function compartilharVistoria(vistoria: VistoriaObra) {
 export function VistoriaContent({
   obraId,
   obraMeta,
+  abaFixa,
 }: {
   obraId: string;
   obraMeta: ObraMeta;
+  /** Quando definido, a página é dedicada a essa aba: some a barra de abas
+   * interna e navegar para outra aba vira navegação de rota de verdade
+   * (usada pelo menu lateral unificado). */
+  abaFixa?: "nova" | "historico" | "pcp" | "rdo";
 }) {
-  const [aba, setAba] = useState<"nova" | "historico" | "pcp" | "rdo">("nova");
+  const router = useRouter();
+  const [aba, setAba] = useState<"nova" | "historico" | "pcp" | "rdo">(abaFixa ?? "nova");
 
   // ---- formulário de nova vistoria ----
   const [responsavelVistoria, setResponsavelVistoria] = useState("");
@@ -162,6 +170,10 @@ export function VistoriaContent({
   }, [obraId]);
 
   async function abrirHistorico() {
+    if (abaFixa) {
+      router.push(hrefObra(obraId, "/historico"));
+      return;
+    }
     setAba("historico");
     const lista = await getVistorias(obraId);
     setVistorias(lista);
@@ -306,7 +318,11 @@ export function VistoriaContent({
       }
       limparFormulario();
       setVistorias(await getVistorias(obraId));
-      setAba("historico");
+      if (abaFixa) {
+        router.push(hrefObra(obraId, "/historico"));
+      } else {
+        setAba("historico");
+      }
     } finally {
       setSalvando(false);
     }
@@ -440,31 +456,55 @@ export function VistoriaContent({
     }
   }
 
+  const TITULOS_ABA: Record<
+    "nova" | "historico" | "pcp" | "rdo",
+    { title: string; description: string }
+  > = {
+    nova: {
+      title: "Nova Vistoria",
+      description: "Registre pendências com foto, prazo e responsável — e envie a Atividade por WhatsApp para quem vai executar.",
+    },
+    historico: {
+      title: "Histórico de Vistorias",
+      description: "Consulte, filtre e edite as vistorias já registradas.",
+    },
+    pcp: {
+      title: "PCP Semanal",
+      description: "Programação semanal das pendências por equipe.",
+    },
+    rdo: {
+      title: "RDO Simplificado",
+      description: "Lance diárias, profissionais e serviços executados por equipe.",
+    },
+  };
+
   return (
     <>
       <PageHeader
-        title="Vistoria de Obra"
-        description="Registre pendências com foto, prazo e responsável — e envie a Atividade por WhatsApp para quem vai executar."
+        title={TITULOS_ABA[aba].title}
+        description={TITULOS_ABA[aba].description}
       />
 
-      <HorizontalScrollTabs className="mb-5">
-        <HorizontalTab active={aba === "nova"} onClick={() => setAba("nova")}
-          className={aba === "nova" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
-          Nova vistoria
-        </HorizontalTab>
-        <HorizontalTab active={aba === "historico"} onClick={abrirHistorico}
-          className={aba === "historico" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
-          Histórico
-        </HorizontalTab>
-        <HorizontalTab active={aba === "pcp"} onClick={() => setAba("pcp")}
-          className={aba === "pcp" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
-          PCP Semanal
-        </HorizontalTab>
-        <HorizontalTab active={aba === "rdo"} onClick={() => setAba("rdo")}
-          className={aba === "rdo" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
-          RDO Simplificado
-        </HorizontalTab>
-      </HorizontalScrollTabs>
+      {!abaFixa && (
+        <HorizontalScrollTabs className="mb-5">
+          <HorizontalTab active={aba === "nova"} onClick={() => setAba("nova")}
+            className={aba === "nova" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
+            Nova vistoria
+          </HorizontalTab>
+          <HorizontalTab active={aba === "historico"} onClick={abrirHistorico}
+            className={aba === "historico" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
+            Histórico
+          </HorizontalTab>
+          <HorizontalTab active={aba === "pcp"} onClick={() => setAba("pcp")}
+            className={aba === "pcp" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
+            PCP Semanal
+          </HorizontalTab>
+          <HorizontalTab active={aba === "rdo"} onClick={() => setAba("rdo")}
+            className={aba === "rdo" ? "bg-blue-600 text-white" : "bg-white text-slate-600 ring-1 ring-slate-200"}>
+            RDO Simplificado
+          </HorizontalTab>
+        </HorizontalScrollTabs>
+      )}
 
       {aba === "nova" && (
         <>

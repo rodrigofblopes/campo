@@ -9,7 +9,7 @@ const URL_BASE = "https://campo-one.vercel.app";
  * completa de atividades (a imagem sozinha é só um recorte do momento).
  */
 function linkVistoria(obraId: string): string {
-  return `${URL_BASE}/vistoria/${obraId}`;
+  return `${URL_BASE}/obras/${obraId}/vistoria`;
 }
 
 function formatarDataBr(iso: string): string {
