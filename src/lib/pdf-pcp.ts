@@ -26,6 +26,37 @@ function formatarDataCompleta(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+function checkPageBreak(doc: jsPDF, y: number, needed: number, pageH: number): number {
+  if (y + needed > pageH - 15) {
+    doc.addPage();
+    return 20;
+  }
+  return y;
+}
+
+function ajustarAoBox(
+  doc: jsPDF,
+  dataUrl: string,
+  maxW: number,
+  maxH: number
+): { w: number; h: number } {
+  const props = doc.getImageProperties(dataUrl);
+  let w = maxW;
+  let h = (props.height / props.width) * w;
+  if (h > maxH) {
+    h = maxH;
+    w = (props.width / props.height) * h;
+  }
+  return { w, h };
+}
+
+function corSituacao(situacao: string): [number, number, number] {
+  if (situacao === "Atrasado") return [185, 28, 28];
+  if (situacao === "Concluído") return [5, 118, 78];
+  if (situacao === "Em execução") return [37, 99, 235];
+  return [180, 130, 10];
+}
+
 function slugify(texto: string): string {
   return (texto || "")
     .toLowerCase()
@@ -226,15 +257,19 @@ export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp, detalhado = fal
 
   if (detalhado) {
     // União de tudo que tem início ou prazo na semana, sem repetir a mesma
-    // pendência (ex.: início e prazo caindo na mesma semana).
+    // pendência (ex.: início e prazo caindo na mesma semana) — ordenada
+    // pelo prazo (conclusão) pra ler na mesma ordem da grade.
     const vistosIds = new Set<string>();
-    const itensDaSemana = [...previstosSemana, ...comPrazoNaSemana].filter((it) => {
-      if (vistosIds.has(it.id)) return false;
-      vistosIds.add(it.id);
-      return true;
-    });
+    const itensDaSemana = [...comPrazoNaSemana, ...previstosSemana]
+      .filter((it) => {
+        if (vistosIds.has(it.id)) return false;
+        vistosIds.add(it.id);
+        return true;
+      })
+      .sort((a, b) => (a.prazo || a.inicioPrevisto || "").localeCompare(b.prazo || b.inicioPrevisto || ""));
 
     if (itensDaSemana.length > 0) {
+      const pageH = doc.internal.pageSize.getHeight();
       if (y > 240) {
         doc.addPage();
         y = 20;
@@ -242,38 +277,152 @@ export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp, detalhado = fal
       doc.setFontSize(13);
       doc.setFont("helvetica", "bold");
       doc.text("Detalhamento — todas as pendências da semana", margem, y);
-      y += 4;
+      y += 3;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(110);
+      doc.text("Uma pendência por bloco, com foto, local, equipe e datas — pra entender de longe sem precisar abrir o app.", margem, y + 4);
+      doc.setTextColor(0);
+      y += 12;
 
-      autoTable(doc, {
-        startY: y,
-        head: [["Local", "Equipe", "Responsável", "Início", "Prazo", "Situação", "Descrição"]],
-        body: itensDaSemana.map((it) => [
-          it.local || "-",
-          it.equipe || "-",
-          it.responsavel || "-",
-          it.inicioPrevisto ? formatarDataCompleta(it.inicioPrevisto) : "-",
-          formatarDataCompleta(it.prazo),
-          statusEfetivo(it, hoje),
-          it.descricao || "-",
-        ]),
-        styles: { fontSize: 7.5, cellPadding: 2, valign: "top" },
-        headStyles: { fillColor: [30, 64, 120] },
-        columnStyles: { 6: { cellWidth: 55 } },
-        margin: { left: margem, right: margem },
-        didParseCell: (data) => {
-          if (data.section === "body" && data.column.index === 5) {
-            const situacao = String(data.cell.raw);
-            if (situacao === "Atrasado") data.cell.styles.textColor = [185, 28, 28];
-            else if (situacao === "Concluído") data.cell.styles.textColor = [5, 118, 78];
+      itensDaSemana.forEach((it, i) => {
+        const temFoto = Boolean(it.foto);
+        const temFotoDepois = Boolean(it.fotoDepois);
+        const estimativaAltura = temFoto ? (temFotoDepois ? 140 : 78) : 40;
+        y = checkPageBreak(doc, y, estimativaAltura, pageH);
+
+        const situacao = statusEfetivo(it, hoje);
+        const [rC, gC, bC] = corSituacao(situacao);
+
+        doc.setFillColor(240, 240, 240);
+        doc.rect(margem, y - 5, pageW - margem * 2, 8, "F");
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.text(`${i + 1}. ${it.local || it.descricao || "Pendência"}`, margem + 2, y);
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(rC, gC, bC);
+        const larguraSituacao = doc.getTextWidth(situacao);
+        doc.text(situacao, pageW - margem - 2 - larguraSituacao, y);
+        doc.setTextColor(0);
+        y += 9;
+
+        if (temFoto && it.foto) {
+          try {
+            const maxW = 60;
+            const maxH = 55;
+            const { w, h } = ajustarAoBox(doc, it.foto, maxW, maxH);
+            doc.setDrawColor(215);
+            doc.rect(margem - 0.5, y - 0.5, w + 1, h + 1);
+            doc.addImage(it.foto, "JPEG", margem, y, w, h);
+
+            const textX = margem + maxW + 6;
+            const textW = pageW - margem * 2 - maxW - 6;
+            let ty = y + 5;
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "bold");
+            doc.text("Equipe:", textX, ty);
+            doc.setFont("helvetica", "normal");
+            doc.text(it.equipe || "-", textX + 18, ty);
+            ty += 6;
+            doc.setFont("helvetica", "bold");
+            doc.text("Responsável:", textX, ty);
+            doc.setFont("helvetica", "normal");
+            doc.text(doc.splitTextToSize(it.responsavel || "-", textW - 27), textX + 27, ty);
+            ty += 6;
+            doc.setFont("helvetica", "bold");
+            doc.text("Início:", textX, ty);
+            doc.setFont("helvetica", "normal");
+            doc.text(it.inicioPrevisto ? formatarDataCompleta(it.inicioPrevisto) : "a definir", textX + 15, ty);
+            ty += 6;
+            doc.setFont("helvetica", "bold");
+            doc.text("Prazo:", textX, ty);
+            doc.setFont("helvetica", "normal");
+            doc.text(it.prazo ? formatarDataCompleta(it.prazo) : "a definir", textX + 15, ty);
+            ty += 6;
+            doc.setFont("helvetica", "bold");
+            doc.text("Descrição:", textX, ty);
+            doc.setFont("helvetica", "normal");
+            doc.text(doc.splitTextToSize(it.descricao || "-", textW), textX, ty + 5);
+
+            y += Math.max(maxH, 32) + 6;
+          } catch {
+            y = camposTexto(doc, it, y, pageW, margem, situacao);
           }
-        },
-      });
+        } else {
+          y = camposTexto(doc, it, y, pageW, margem, situacao);
+        }
 
-      y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+        if (temFotoDepois && it.fotoDepois) {
+          y = checkPageBreak(doc, y, 68, pageH);
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(5, 118, 78);
+          doc.text(
+            `Concluído em ${it.concluidoEm ? new Date(it.concluidoEm).toLocaleDateString("pt-BR") : "-"} — foto de conclusão:`,
+            margem,
+            y
+          );
+          doc.setTextColor(0);
+          y += 4;
+          try {
+            const maxW2 = 65;
+            const maxH2 = 58;
+            const { w: w2, h: h2 } = ajustarAoBox(doc, it.fotoDepois, maxW2, maxH2);
+            doc.setDrawColor(215);
+            doc.rect(margem - 0.5, y - 0.5, w2 + 1, h2 + 1);
+            doc.addImage(it.fotoDepois, "JPEG", margem, y, w2, h2);
+            y += h2 + 4;
+          } catch {
+            // ignora falha ao anexar a foto de conclusão
+          }
+        }
+
+        y += 6;
+      });
     }
   }
 
   return doc;
+}
+
+/** Bloco de texto (sem foto) com os campos principais de uma pendência —
+ * usado quando não há foto anexada ou quando a imagem falha ao carregar. */
+function camposTexto(
+  doc: jsPDF,
+  it: PendenciaVistoria,
+  y: number,
+  pageW: number,
+  margem: number,
+  situacao: string
+): number {
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text("Equipe:", margem, y + 5);
+  doc.setFont("helvetica", "normal");
+  doc.text(it.equipe || "-", margem + 18, y + 5);
+  doc.setFont("helvetica", "bold");
+  doc.text("Responsável:", margem, y + 11);
+  doc.setFont("helvetica", "normal");
+  doc.text(it.responsavel || "-", margem + 27, y + 11);
+  doc.setFont("helvetica", "bold");
+  doc.text("Início:", margem, y + 17);
+  doc.setFont("helvetica", "normal");
+  doc.text(it.inicioPrevisto ? formatarDataCompleta(it.inicioPrevisto) : "a definir", margem + 15, y + 17);
+  doc.setFont("helvetica", "bold");
+  doc.text("Prazo:", margem + 60, y + 17);
+  doc.setFont("helvetica", "normal");
+  doc.text(it.prazo ? formatarDataCompleta(it.prazo) : "a definir", margem + 75, y + 17);
+  doc.setFont("helvetica", "bold");
+  doc.text("Situação:", margem + 120, y + 17);
+  doc.setFont("helvetica", "normal");
+  doc.text(situacao, margem + 138, y + 17);
+  doc.setFont("helvetica", "bold");
+  doc.text("Descrição:", margem, y + 23);
+  doc.setFont("helvetica", "normal");
+  const linhas = doc.splitTextToSize(it.descricao || "-", pageW - margem * 2);
+  doc.text(linhas, margem, y + 29);
+  return y + 29 + linhas.length * 5;
 }
 
 export function nomeArquivoPcp(obraNome: string, dias: DiaSemanaPcp[], detalhado = false): string {
