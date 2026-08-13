@@ -71,8 +71,13 @@ function descricaoItemConclusao(it: PendenciaVistoria): string {
  * Gera o PDF executivo do PCP Semanal — pensado para a diretoria: um
  * resumo com os números da semana (previsto x realizado x atrasado) logo
  * no topo, seguido da grade dia a dia e de um fechamento por equipe.
+ *
+ * Com `detalhado: true`, acrescenta ao final uma listagem completa —
+ * pendência a pendência, com local, equipe, responsável, início, prazo,
+ * situação e descrição — pra quem quiser entender o PCP com mais
+ * profundidade do que a grade dá pra mostrar.
  */
-export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp): jsPDF {
+export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp, detalhado = false): jsPDF {
   const doc = new jsPDF();
   const margem = 14;
   const pageW = doc.internal.pageSize.getWidth();
@@ -81,7 +86,7 @@ export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp): jsPDF {
 
   doc.setFontSize(16);
   doc.setFont("helvetica", "bold");
-  doc.text("PCP Semanal", margem, y);
+  doc.text(detalhado ? "PCP Semanal — Detalhado" : "PCP Semanal", margem, y);
   y += 8;
 
   doc.setFontSize(10);
@@ -216,15 +221,66 @@ export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp): jsPDF {
       headStyles: { fillColor: [185, 28, 28] },
       margin: { left: margem, right: margem },
     });
+    y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+  }
+
+  if (detalhado) {
+    // União de tudo que tem início ou prazo na semana, sem repetir a mesma
+    // pendência (ex.: início e prazo caindo na mesma semana).
+    const vistosIds = new Set<string>();
+    const itensDaSemana = [...previstosSemana, ...comPrazoNaSemana].filter((it) => {
+      if (vistosIds.has(it.id)) return false;
+      vistosIds.add(it.id);
+      return true;
+    });
+
+    if (itensDaSemana.length > 0) {
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("Detalhamento — todas as pendências da semana", margem, y);
+      y += 4;
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Local", "Equipe", "Responsável", "Início", "Prazo", "Situação", "Descrição"]],
+        body: itensDaSemana.map((it) => [
+          it.local || "-",
+          it.equipe || "-",
+          it.responsavel || "-",
+          it.inicioPrevisto ? formatarDataCompleta(it.inicioPrevisto) : "-",
+          formatarDataCompleta(it.prazo),
+          statusEfetivo(it, hoje),
+          it.descricao || "-",
+        ]),
+        styles: { fontSize: 7.5, cellPadding: 2, valign: "top" },
+        headStyles: { fillColor: [30, 64, 120] },
+        columnStyles: { 6: { cellWidth: 55 } },
+        margin: { left: margem, right: margem },
+        didParseCell: (data) => {
+          if (data.section === "body" && data.column.index === 5) {
+            const situacao = String(data.cell.raw);
+            if (situacao === "Atrasado") data.cell.styles.textColor = [185, 28, 28];
+            else if (situacao === "Concluído") data.cell.styles.textColor = [5, 118, 78];
+          }
+        },
+      });
+
+      y = (doc as jsPDF & { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
+    }
   }
 
   return doc;
 }
 
-export function nomeArquivoPcp(obraNome: string, dias: DiaSemanaPcp[]): string {
+export function nomeArquivoPcp(obraNome: string, dias: DiaSemanaPcp[], detalhado = false): string {
   const slugObra = slugify(obraNome || "obra");
   const primeiraData = dias[0]?.iso ?? "sem-data";
-  return `pcp-semanal-${slugObra}-${primeiraData}.pdf`;
+  const sufixo = detalhado ? "-detalhado" : "";
+  return `pcp-semanal-${slugObra}-${primeiraData}${sufixo}.pdf`;
 }
 
 /**
@@ -233,14 +289,19 @@ export function nomeArquivoPcp(obraNome: string, dias: DiaSemanaPcp[]): string {
  * diretoria). Se o navegador não suportar compartilhar arquivos, baixa o
  * PDF e abre o WhatsApp Web com um texto avisando para anexar o PDF
  * baixado.
+ *
+ * `detalhado: true` gera a versão com a listagem completa de pendências
+ * ao final, além do resumo executivo — pra quando a diretoria quiser
+ * entender o PCP com mais profundidade do que a grade da semana.
  */
-export async function compartilharPcp(dados: DadosPcp): Promise<void> {
-  const doc = gerarPDFPcp(dados);
-  const fileName = nomeArquivoPcp(dados.obraNome, dados.dias);
+export async function compartilharPcp(dados: DadosPcp, detalhado = false): Promise<void> {
+  const doc = gerarPDFPcp(dados, detalhado);
+  const fileName = nomeArquivoPcp(dados.obraNome, dados.dias, detalhado);
   const blob = doc.output("blob");
   const file = new File([blob], fileName, { type: "application/pdf" });
 
-  const texto = `PCP Semanal — ${dados.obraNome}\nSemana de ${periodoSemanaPcp(dados.dias)}\n${URL_BASE}/obras/${dados.obraId}/pcp`;
+  const titulo = detalhado ? "PCP Semanal — Detalhado" : "PCP Semanal";
+  const texto = `${titulo} — ${dados.obraNome}\nSemana de ${periodoSemanaPcp(dados.dias)}\n${URL_BASE}/obras/${dados.obraId}/pcp`;
 
   const nav = navigator as Navigator & {
     canShare?: (data?: ShareData) => boolean;
@@ -249,7 +310,7 @@ export async function compartilharPcp(dados: DadosPcp): Promise<void> {
 
   if (nav.canShare && nav.share && nav.canShare({ files: [file] })) {
     try {
-      await nav.share({ files: [file], title: "PCP Semanal", text: texto });
+      await nav.share({ files: [file], title: titulo, text: texto });
       return;
     } catch {
       // usuário cancelou o compartilhamento — cai no fallback abaixo
