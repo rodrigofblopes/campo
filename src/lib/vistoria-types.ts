@@ -11,6 +11,10 @@ export const EQUIPES = [
   "Piso Vinílico",
   "Acabamento",
   "Civil",
+  "Vidros",
+  "Grama",
+  "Comunicação Visual",
+  "Pavers",
   "Outros",
 ] as const;
 
