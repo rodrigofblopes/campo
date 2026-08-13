@@ -8,6 +8,7 @@ import { HorizontalScrollTabs, HorizontalTab } from "@/components/HorizontalScro
 import { RdoSimplificadoContent } from "@/components/RdoSimplificadoContent";
 import { gerarPDFVistoria, nomeArquivoVistoria } from "@/lib/pdf-vistoria";
 import { compartilharImagemVistoria, compartilharImagemFiltrada } from "@/lib/image-vistoria";
+import { compartilharPcp } from "@/lib/pdf-pcp";
 import { hrefObra } from "@/lib/grupos-nav";
 import {
   contarPendencias,
@@ -159,6 +160,7 @@ export function VistoriaContent({
   // ---- PCP semanal ----
   const [semanaOffset, setSemanaOffset] = useState(0);
   const [itemSelecionado, setItemSelecionado] = useState<PendenciaVistoria | null>(null);
+  const [enviandoPcp, setEnviandoPcp] = useState(false);
 
   useEffect(() => {
     let ativo = true;
@@ -256,7 +258,7 @@ export function VistoriaContent({
   }, [vistorias]);
 
   const temItemNaSemana = diasSemana.some((dia) =>
-    todosItens.some((it) => it.prazo === dia.iso)
+    todosItens.some((it) => (it.inicioPrevisto || it.prazo) === dia.iso || it.prazo === dia.iso)
   );
 
   function atualizarItem(id: string, patch: Partial<PendenciaVistoria>) {
@@ -326,6 +328,23 @@ export function VistoriaContent({
       }
     } finally {
       setSalvando(false);
+    }
+  }
+
+  /** Gera o PDF executivo do PCP Semanal (previsto x realizado x atrasado da
+   * semana em exibição) e manda por WhatsApp — pensado para o envio rápido
+   * pra diretoria, sem precisar abrir o histórico item a item. */
+  async function handleEnviarPcpWhatsApp() {
+    setEnviandoPcp(true);
+    try {
+      await compartilharPcp({
+        obraId,
+        obraNome: obraMeta.nome,
+        dias: diasSemana,
+        itens: todosItens,
+      });
+    } finally {
+      setEnviandoPcp(false);
     }
   }
 
@@ -471,7 +490,7 @@ export function VistoriaContent({
     },
     pcp: {
       title: "PCP Semanal",
-      description: "Programação semanal das pendências por equipe.",
+      description: "Programação semanal das pendências por equipe — envie o PDF por WhatsApp para a diretoria.",
     },
     rdo: {
       title: "RDO Simplificado",
@@ -574,7 +593,7 @@ export function VistoriaContent({
                   </label>
                 </div>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <label className="block">
                     <span className="text-xs font-medium text-slate-500">Equipe</span>
                     <select
@@ -606,8 +625,20 @@ export function VistoriaContent({
                       <option value="Alta">Alta</option>
                     </select>
                   </label>
+                </div>
+
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <label className="block">
-                    <span className="text-xs font-medium text-slate-500">Prazo</span>
+                    <span className="text-xs font-medium text-slate-500">Data de início</span>
+                    <input
+                      type="date"
+                      value={item.inicioPrevisto || ""}
+                      onChange={(e) => atualizarItem(item.id, { inicioPrevisto: e.target.value })}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-xs font-medium text-slate-500">Prazo (conclusão)</span>
                     <input
                       type="date"
                       value={item.prazo}
@@ -919,7 +950,7 @@ export function VistoriaContent({
                                 />
                               </label>
                             </div>
-                            <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
                               <label className="block">
                                 <span className="text-xs font-medium text-slate-500">Equipe</span>
                                 <select
@@ -951,8 +982,21 @@ export function VistoriaContent({
                                   <option value="Alta">Alta</option>
                                 </select>
                               </label>
+                            </div>
+                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
                               <label className="block">
-                                <span className="text-xs font-medium text-slate-500">Prazo</span>
+                                <span className="text-xs font-medium text-slate-500">Data de início</span>
+                                <input
+                                  type="date"
+                                  value={item.inicioPrevisto || ""}
+                                  onChange={(e) =>
+                                    atualizarItemRascunho(item.id, { inicioPrevisto: e.target.value })
+                                  }
+                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                />
+                              </label>
+                              <label className="block">
+                                <span className="text-xs font-medium text-slate-500">Prazo (conclusão)</span>
                                 <input
                                   type="date"
                                   value={item.prazo}
@@ -1208,6 +1252,16 @@ export function VistoriaContent({
             </button>
           </div>
 
+          <button
+            type="button"
+            disabled={enviandoPcp}
+            onClick={handleEnviarPcpWhatsApp}
+            className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            <Send size={16} />
+            {enviandoPcp ? "Gerando PDF..." : "Enviar PDF do PCP por WhatsApp"}
+          </button>
+
           <Card className="overflow-x-auto p-0">
             <table className="w-full min-w-[720px] border-collapse text-xs">
               <thead>
@@ -1232,7 +1286,12 @@ export function VistoriaContent({
                     Previsto
                   </td>
                   {diasSemana.map((dia) => {
-                    const itensDia = todosItens.filter((it) => it.prazo === dia.iso);
+                    // "Previsto" é posicionado pela data de início — pendências
+                    // antigas sem início preenchido caem pelo prazo, pra não
+                    // sumir da grade.
+                    const itensDia = todosItens.filter(
+                      (it) => (it.inicioPrevisto || it.prazo) === dia.iso
+                    );
                     return (
                       <td
                         key={dia.iso}
@@ -1259,15 +1318,14 @@ export function VistoriaContent({
                 </tr>
                 <tr>
                   <td className="p-2 align-top text-[11px] font-bold uppercase tracking-wide text-emerald-600">
-                    Realizado
+                    Conclusão
                   </td>
                   {diasSemana.map((dia) => {
-                    const itensDia = todosItens.filter(
-                      (it) =>
-                        it.status === "Concluído" &&
-                        it.concluidoEm &&
-                        it.concluidoEm.slice(0, 10) === dia.iso
-                    );
+                    // "Conclusão" é posicionado pelo prazo (data planejada de
+                    // entrega) — não pela data real em que foi marcado
+                    // Concluído, então mostra também o que ainda está em
+                    // aberto com entrega prevista para o dia.
+                    const itensDia = todosItens.filter((it) => it.prazo === dia.iso);
                     return (
                       <td
                         key={dia.iso}
@@ -1282,7 +1340,11 @@ export function VistoriaContent({
                               type="button"
                               onClick={() => setItemSelecionado(it)}
                               title={it.local || it.descricao}
-                              className="truncate rounded bg-emerald-50 px-1.5 py-1 text-left text-[10px] font-medium text-emerald-700 hover:bg-emerald-100"
+                              className={`truncate rounded px-1.5 py-1 text-left text-[10px] font-medium ${
+                                it.status === "Concluído"
+                                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                              }`}
                             >
                               {it.local || it.descricao}
                             </button>
@@ -1337,7 +1399,13 @@ export function VistoriaContent({
 
                 <div className="mb-3 space-y-1 text-xs text-slate-500">
                   <p>
-                    Prazo:{" "}
+                    Início:{" "}
+                    {itemSelecionado.inicioPrevisto
+                      ? itemSelecionado.inicioPrevisto.split("-").reverse().join("/")
+                      : "a definir"}
+                  </p>
+                  <p>
+                    Prazo (conclusão):{" "}
                     {itemSelecionado.prazo
                       ? itemSelecionado.prazo.split("-").reverse().join("/")
                       : "a definir"}
