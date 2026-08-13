@@ -331,18 +331,24 @@ export function VistoriaContent({
     }
   }
 
-  /** Gera o PDF executivo do PCP Semanal (previsto x realizado x atrasado da
-   * semana em exibição) e manda por WhatsApp — pensado para o envio rápido
-   * pra diretoria, sem precisar abrir o histórico item a item. */
-  async function handleEnviarPcpWhatsApp() {
+  /** Gera o PDF do PCP Semanal e manda por WhatsApp — pensado para o envio
+   * rápido pra diretoria, sem precisar abrir o histórico item a item.
+   * `detalhado` acrescenta ao final a listagem completa de pendências da
+   * semana (local, equipe, responsável, início, prazo, situação e
+   * descrição), pra quem quiser entender o PCP com mais profundidade do
+   * que a grade mostra. */
+  async function handleEnviarPcpWhatsApp(detalhado: boolean) {
     setEnviandoPcp(true);
     try {
-      await compartilharPcp({
-        obraId,
-        obraNome: obraMeta.nome,
-        dias: diasSemana,
-        itens: todosItens,
-      });
+      await compartilharPcp(
+        {
+          obraId,
+          obraNome: obraMeta.nome,
+          dias: diasSemana,
+          itens: todosItens,
+        },
+        detalhado
+      );
     } finally {
       setEnviandoPcp(false);
     }
@@ -1252,15 +1258,29 @@ export function VistoriaContent({
             </button>
           </div>
 
-          <button
-            type="button"
-            disabled={enviandoPcp}
-            onClick={handleEnviarPcpWhatsApp}
-            className="mb-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            <Send size={16} />
-            {enviandoPcp ? "Gerando PDF..." : "Enviar PDF do PCP por WhatsApp"}
-          </button>
+          <div className="mb-4">
+            <p className="mb-2 text-xs font-medium text-slate-500">Enviar PDF do PCP por WhatsApp:</p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                disabled={enviandoPcp}
+                onClick={() => handleEnviarPcpWhatsApp(false)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <Send size={16} />
+                {enviandoPcp ? "Gerando..." : "Resumo"}
+              </button>
+              <button
+                type="button"
+                disabled={enviandoPcp}
+                onClick={() => handleEnviarPcpWhatsApp(true)}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                <Send size={16} />
+                {enviandoPcp ? "Gerando..." : "Detalhado"}
+              </button>
+            </div>
+          </div>
 
           <Card className="overflow-x-auto p-0">
             <table className="w-full min-w-[720px] border-collapse text-xs">
@@ -1305,10 +1325,15 @@ export function VistoriaContent({
                               key={it.id}
                               type="button"
                               onClick={() => setItemSelecionado(it)}
-                              title={it.local || it.descricao}
-                              className="truncate rounded bg-amber-50 px-1.5 py-1 text-left text-[10px] font-medium text-amber-700 hover:bg-amber-100"
+                              title={it.equipe ? `${it.local || it.descricao} — ${it.equipe}` : it.local || it.descricao}
+                              className="rounded bg-amber-50 px-1.5 py-1 text-left text-[10px] font-medium text-amber-700 hover:bg-amber-100"
                             >
-                              {it.local || it.descricao}
+                              <span className="block truncate">{it.local || it.descricao}</span>
+                              {it.equipe && (
+                                <span className="block truncate text-[9px] font-normal text-amber-600/80">
+                                  {it.equipe}
+                                </span>
+                              )}
                             </button>
                           ))}
                         </div>
@@ -1339,14 +1364,23 @@ export function VistoriaContent({
                               key={it.id}
                               type="button"
                               onClick={() => setItemSelecionado(it)}
-                              title={it.local || it.descricao}
-                              className={`truncate rounded px-1.5 py-1 text-left text-[10px] font-medium ${
+                              title={it.equipe ? `${it.local || it.descricao} — ${it.equipe}` : it.local || it.descricao}
+                              className={`rounded px-1.5 py-1 text-left text-[10px] font-medium ${
                                 it.status === "Concluído"
                                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                               }`}
                             >
-                              {it.local || it.descricao}
+                              <span className="block truncate">{it.local || it.descricao}</span>
+                              {it.equipe && (
+                                <span
+                                  className={`block truncate text-[9px] font-normal ${
+                                    it.status === "Concluído" ? "text-emerald-600/80" : "text-slate-500"
+                                  }`}
+                                >
+                                  {it.equipe}
+                                </span>
+                              )}
                             </button>
                           ))}
                         </div>
