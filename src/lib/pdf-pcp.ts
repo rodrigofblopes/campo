@@ -90,12 +90,17 @@ function itensConclusaoNoDia(itens: PendenciaVistoria[], dia: DiaSemanaPcp): Pen
 
 function descricaoItem(it: PendenciaVistoria): string {
   const base = it.local || it.descricao || "Pendência";
-  return it.equipe ? `${base} (${it.equipe})` : base;
+  const comEquipe = it.equipe ? `${base} (${it.equipe})` : base;
+  // Acrescenta "o que está errado" numa segunda linha dentro da célula —
+  // só o local e a equipe não davam contexto suficiente pra entender a
+  // pendência de relance na grade.
+  return it.local && it.descricao ? `${comEquipe}\n${it.descricao}` : comEquipe;
 }
 
 function descricaoItemConclusao(it: PendenciaVistoria): string {
   const sufixo = it.status === "Concluído" ? " — Concluído" : " — em aberto";
-  return `${descricaoItem(it)}${sufixo}`;
+  const [primeiraLinha, ...resto] = descricaoItem(it).split("\n");
+  return [`${primeiraLinha}${sufixo}`, ...resto].join("\n");
 }
 
 /**
