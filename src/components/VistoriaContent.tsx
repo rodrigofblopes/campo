@@ -31,6 +31,16 @@ function novoId(): string {
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/** Texto do tooltip (hover) dos cards da grade do PCP — junta local,
+ * equipe e "o que está errado" pra dar contexto rápido sem precisar abrir
+ * o detalhe, especialmente útil no desktop onde os cards ficam estreitos. */
+function tituloItemPcp(it: PendenciaVistoria): string {
+  const partes = [it.local || it.descricao || "Pendência"];
+  if (it.equipe) partes.push(it.equipe);
+  if (it.local && it.descricao) partes.push(it.descricao);
+  return partes.join(" — ");
+}
+
 function novaPendenciaDraft(): PendenciaVistoria {
   return {
     id: novoId(),
@@ -1348,6 +1358,11 @@ export function VistoriaContent({
                             {it.equipe && (
                               <span className="block text-[10px] text-amber-600/80">{it.equipe}</span>
                             )}
+                            {it.local && it.descricao && (
+                              <span className="mt-0.5 block line-clamp-2 text-[11px] text-amber-900/80">
+                                {it.descricao}
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -1387,6 +1402,15 @@ export function VistoriaContent({
                                 }`}
                               >
                                 {it.equipe}
+                              </span>
+                            )}
+                            {it.local && it.descricao && (
+                              <span
+                                className={`mt-0.5 block line-clamp-2 text-[11px] ${
+                                  it.status === "Concluído" ? "text-emerald-900/80" : "text-slate-600"
+                                }`}
+                              >
+                                {it.descricao}
                               </span>
                             )}
                           </button>
@@ -1442,13 +1466,18 @@ export function VistoriaContent({
                               key={it.id}
                               type="button"
                               onClick={() => setItemSelecionado(it)}
-                              title={it.equipe ? `${it.local || it.descricao} — ${it.equipe}` : it.local || it.descricao}
+                              title={tituloItemPcp(it)}
                               className="rounded bg-amber-50 px-1.5 py-1 text-left text-[10px] font-medium text-amber-700 hover:bg-amber-100"
                             >
                               <span className="block truncate">{it.local || it.descricao}</span>
                               {it.equipe && (
                                 <span className="block truncate text-[9px] font-normal text-amber-600/80">
                                   {it.equipe}
+                                </span>
+                              )}
+                              {it.local && it.descricao && (
+                                <span className="block truncate text-[9px] font-normal text-amber-900/70">
+                                  {it.descricao}
                                 </span>
                               )}
                             </button>
@@ -1481,7 +1510,7 @@ export function VistoriaContent({
                               key={it.id}
                               type="button"
                               onClick={() => setItemSelecionado(it)}
-                              title={it.equipe ? `${it.local || it.descricao} — ${it.equipe}` : it.local || it.descricao}
+                              title={tituloItemPcp(it)}
                               className={`rounded px-1.5 py-1 text-left text-[10px] font-medium ${
                                 it.status === "Concluído"
                                   ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
@@ -1496,6 +1525,15 @@ export function VistoriaContent({
                                   }`}
                                 >
                                   {it.equipe}
+                                </span>
+                              )}
+                              {it.local && it.descricao && (
+                                <span
+                                  className={`block truncate text-[9px] font-normal ${
+                                    it.status === "Concluído" ? "text-emerald-900/70" : "text-slate-500"
+                                  }`}
+                                >
+                                  {it.descricao}
                                 </span>
                               )}
                             </button>
