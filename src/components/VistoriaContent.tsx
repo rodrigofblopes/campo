@@ -161,6 +161,9 @@ export function VistoriaContent({
   const [semanaOffset, setSemanaOffset] = useState(0);
   const [itemSelecionado, setItemSelecionado] = useState<PendenciaVistoria | null>(null);
   const [enviandoPcp, setEnviandoPcp] = useState(false);
+  // No mobile a grade de 7 dias vira um seletor de dia único — evita ter
+  // que arrastar a tabela pros lados numa tela estreita.
+  const [diaIdxPcp, setDiaIdxPcp] = useState(0);
 
   useEffect(() => {
     let ativo = true;
@@ -249,6 +252,17 @@ export function VistoriaContent({
       return { nome, iso, diaMes };
     });
   }, [semanaOffset]);
+
+  // Ao trocar de semana, o seletor de dia (mobile) volta pro dia de hoje
+  // quando ele estiver na semana em exibição, ou pra segunda-feira. Ajusta
+  // o estado durante a renderização (em vez de um efeito) seguindo o
+  // padrão recomendado do React pra resetar estado quando um valor muda.
+  const [semanaOffsetAnterior, setSemanaOffsetAnterior] = useState(semanaOffset);
+  if (semanaOffset !== semanaOffsetAnterior) {
+    setSemanaOffsetAnterior(semanaOffset);
+    const idxHoje = diasSemana.findIndex((d) => d.iso === hojeISO);
+    setDiaIdxPcp(idxHoje >= 0 ? idxHoje : 0);
+  }
 
   // Pendências de todas as vistorias, achatadas — cada tarefa cai no dia da
   // semana do seu prazo (Previsto) e, se já concluída, no dia em que foi
@@ -1230,7 +1244,7 @@ export function VistoriaContent({
               type="button"
               onClick={() => setSemanaOffset((n) => n - 1)}
               aria-label="Semana anterior"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
             >
               <ChevronLeft size={16} />
             </button>
@@ -1252,7 +1266,7 @@ export function VistoriaContent({
               type="button"
               onClick={() => setSemanaOffset((n) => n + 1)}
               aria-label="Próxima semana"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
             >
               <ChevronRight size={16} />
             </button>
@@ -1282,7 +1296,110 @@ export function VistoriaContent({
             </div>
           </div>
 
-          <Card className="overflow-x-auto p-0">
+          {/* Mobile: seletor de um dia por vez — a tabela de 7 colunas não
+              cabe numa tela estreita sem arrastar, então aqui mostra só o
+              dia escolhido, com os cards em largura total. */}
+          <div className="sm:hidden">
+            <div className="mb-3 flex gap-1.5 overflow-x-auto pb-1">
+              {diasSemana.map((dia, idx) => (
+                <button
+                  key={dia.iso}
+                  type="button"
+                  onClick={() => setDiaIdxPcp(idx)}
+                  className={`flex shrink-0 flex-col items-center rounded-lg px-3 py-2 text-center ${
+                    idx === diaIdxPcp
+                      ? "bg-blue-600 text-white"
+                      : dia.iso === hojeISO
+                        ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+                        : "bg-white text-slate-600 ring-1 ring-slate-200"
+                  }`}
+                >
+                  <span className="text-[11px] font-bold uppercase tracking-wide">{dia.nome}</span>
+                  <span className="text-[10px] font-medium">{dia.diaMes}</span>
+                </button>
+              ))}
+            </div>
+
+            {(() => {
+              const dia = diasSemana[diaIdxPcp];
+              if (!dia) return null;
+              const previstosDia = todosItens.filter((it) => (it.inicioPrevisto || it.prazo) === dia.iso);
+              const conclusaoDia = todosItens.filter((it) => it.prazo === dia.iso);
+              return (
+                <div className="space-y-3">
+                  <Card>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-amber-600">
+                      Previsto · {dia.nome} {dia.diaMes}
+                    </p>
+                    {previstosDia.length === 0 ? (
+                      <p className="text-xs text-slate-400">Nenhum início previsto neste dia.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {previstosDia.map((it) => (
+                          <button
+                            key={it.id}
+                            type="button"
+                            onClick={() => setItemSelecionado(it)}
+                            className="w-full rounded-lg bg-amber-50 px-3 py-2 text-left hover:bg-amber-100"
+                          >
+                            <span className="block text-xs font-medium text-amber-800">
+                              {it.local || it.descricao}
+                            </span>
+                            {it.equipe && (
+                              <span className="block text-[10px] text-amber-600/80">{it.equipe}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+
+                  <Card>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-emerald-600">
+                      Conclusão · {dia.nome} {dia.diaMes}
+                    </p>
+                    {conclusaoDia.length === 0 ? (
+                      <p className="text-xs text-slate-400">Nenhum prazo nesse dia.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {conclusaoDia.map((it) => (
+                          <button
+                            key={it.id}
+                            type="button"
+                            onClick={() => setItemSelecionado(it)}
+                            className={`w-full rounded-lg px-3 py-2 text-left ${
+                              it.status === "Concluído"
+                                ? "bg-emerald-50 hover:bg-emerald-100"
+                                : "bg-slate-100 hover:bg-slate-200"
+                            }`}
+                          >
+                            <span
+                              className={`block text-xs font-medium ${
+                                it.status === "Concluído" ? "text-emerald-800" : "text-slate-700"
+                              }`}
+                            >
+                              {it.local || it.descricao}
+                            </span>
+                            {it.equipe && (
+                              <span
+                                className={`block text-[10px] ${
+                                  it.status === "Concluído" ? "text-emerald-600/80" : "text-slate-500"
+                                }`}
+                              >
+                                {it.equipe}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              );
+            })()}
+          </div>
+
+          <Card className="hidden overflow-x-auto p-0 sm:block">
             <table className="w-full min-w-[720px] border-collapse text-xs">
               <thead>
                 <tr>
