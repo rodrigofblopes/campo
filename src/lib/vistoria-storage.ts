@@ -79,21 +79,36 @@ async function sincronizarFila(): Promise<void> {
   salvarFila(restantes);
 }
 
-export async function getVistorias(obraId: string): Promise<VistoriaObra[]> {
+export interface ResultadoVistorias {
+  vistorias: VistoriaObra[];
+  /** true quando a busca no servidor falhou (rede, timeout, erro 5xx) — a
+   * lista pode estar incompleta/vazia só por causa disso, não porque não
+   * há vistorias de fato. A tela usa isso pra avisar em vez de mostrar
+   * "nenhuma vistoria" silenciosamente. */
+  erro: boolean;
+}
+
+export async function getVistorias(obraId: string): Promise<ResultadoVistorias> {
   // dispara em segundo plano — não atrasa a leitura da lista
   void sincronizarFila();
 
   let doServidor: VistoriaObra[] = [];
-  try {
-    const res = await fetch(`/api/vistorias?obraId=${encodeURIComponent(obraId)}`, {
-      cache: "no-store",
-    });
-    if (res.ok) {
+  let erro = false;
+  // usa retry com backoff (a mesma lógica dos envios) — o banco às vezes
+  // demora pra "acordar" ou tem uma falha passageira, e uma tentativa só
+  // não é suficiente pra distinguir isso de "obra sem vistorias".
+  const res = await fetchComTentativas(`/api/vistorias?obraId=${encodeURIComponent(obraId)}`, {
+    cache: "no-store",
+  });
+  if (res && res.ok) {
+    try {
       const data = (await res.json()) as { vistorias?: VistoriaObra[] };
       doServidor = data.vistorias ?? [];
+    } catch {
+      erro = true;
     }
-  } catch {
-    // sem conexão — segue só com o que estiver pendente localmente
+  } else {
+    erro = true;
   }
 
   const idsNoServidor = new Set(doServidor.map((v) => v.id));
@@ -101,7 +116,7 @@ export async function getVistorias(obraId: string): Promise<VistoriaObra[]> {
     .filter((p) => p.obraId === obraId && p.tipo === "nova" && !idsNoServidor.has(p.vistoria.id))
     .map((p) => p.vistoria);
 
-  return [...pendentesLocais, ...doServidor];
+  return { vistorias: [...pendentesLocais, ...doServidor], erro };
 }
 
 export async function salvarNovaVistoria(
