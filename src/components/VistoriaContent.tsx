@@ -157,6 +157,8 @@ export function VistoriaContent({
 
   // ---- histórico ----
   const [vistorias, setVistorias] = useState<VistoriaObra[]>([]);
+  const [carregandoHistorico, setCarregandoHistorico] = useState(true);
+  const [erroHistorico, setErroHistorico] = useState(false);
   const [fotoAmpliada, setFotoAmpliada] = useState<string | null>(null);
   const [abertoId, setAbertoId] = useState<string | null>(null);
   const [filtroEquipe, setFiltroEquipe] = useState("");
@@ -175,13 +177,33 @@ export function VistoriaContent({
   // que arrastar a tabela pros lados numa tela estreita.
   const [diaIdxPcp, setDiaIdxPcp] = useState(0);
 
+  function carregarHistorico(obraIdAlvo: string, ativoRef: { current: boolean }) {
+    setCarregandoHistorico(true);
+    setErroHistorico(false);
+    getVistorias(obraIdAlvo).then(({ vistorias: lista, erro }) => {
+      if (!ativoRef.current) return;
+      setVistorias(lista);
+      // um erro só vira aviso na tela se não sobrou nada pra mostrar —
+      // se a fila local ou uma tentativa anterior já trouxe dados, não
+      // vale a pena assustar o usuário por uma falha que não afetou o que
+      // ele está vendo.
+      setErroHistorico(erro && lista.length === 0);
+      setCarregandoHistorico(false);
+    });
+  }
+
   useEffect(() => {
-    let ativo = true;
-    getVistorias(obraId).then((lista) => {
-      if (ativo) setVistorias(lista);
+    // não reseta carregando/erro aqui de propósito (evita setState síncrono
+    // no corpo do efeito) — o estado inicial já nasce "carregando".
+    const ativoRef = { current: true };
+    getVistorias(obraId).then(({ vistorias: lista, erro }) => {
+      if (!ativoRef.current) return;
+      setVistorias(lista);
+      setErroHistorico(erro && lista.length === 0);
+      setCarregandoHistorico(false);
     });
     return () => {
-      ativo = false;
+      ativoRef.current = false;
     };
   }, [obraId]);
 
@@ -191,8 +213,7 @@ export function VistoriaContent({
       return;
     }
     setAba("historico");
-    const lista = await getVistorias(obraId);
-    setVistorias(lista);
+    carregarHistorico(obraId, { current: true });
   }
 
   const contadores = useMemo(() => contarPendencias(vistorias), [vistorias]);
@@ -344,7 +365,7 @@ export function VistoriaContent({
         await compartilharImagemVistoria(vistoria);
       }
       limparFormulario();
-      setVistorias(await getVistorias(obraId));
+      carregarHistorico(obraId, { current: true });
       if (abaFixa) {
         router.push(hrefObra(obraId, "/historico"));
       } else {
@@ -845,7 +866,22 @@ export function VistoriaContent({
             </button>
           )}
 
-          {vistorias.length === 0 ? (
+          {carregandoHistorico ? (
+            <Card className="py-10 text-center text-sm text-slate-500">
+              Carregando histórico…
+            </Card>
+          ) : erroHistorico ? (
+            <Card className="py-10 text-center text-sm text-slate-500">
+              <p className="mb-3">Não consegui carregar o histórico agora. Tente de novo.</p>
+              <button
+                type="button"
+                onClick={() => carregarHistorico(obraId, { current: true })}
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                Tentar novamente
+              </button>
+            </Card>
+          ) : vistorias.length === 0 ? (
             <Card className="py-10 text-center text-sm text-slate-500">
               Nenhuma vistoria registrada ainda para esta obra.
             </Card>
