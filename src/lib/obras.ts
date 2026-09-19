@@ -69,3 +69,4 @@ export function getObraMeta(id: string): ObraMeta | undefined {
 export function obraExiste(id: string): boolean {
   return OBRAS.some((o) => o.id === id);
 }
+ 
