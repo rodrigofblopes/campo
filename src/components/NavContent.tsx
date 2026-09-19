@@ -42,21 +42,21 @@ export function linksPrincipais(obraId: string, obraMeta: ObraMeta) {
       label: "Nova Vistoria",
       icon: Camera,
       protegido: false,
-      aba: null,
+      aba: "vistoria" as const,
     },
     {
       href: hrefObra(obraId, "/historico"),
       label: "Histórico",
       icon: Clock,
       protegido: false,
-      aba: null,
+      aba: "historico" as const,
     },
     {
       href: hrefObra(obraId, "/pcp"),
       label: "PCP Semanal",
       icon: Calendar,
       protegido: false,
-      aba: null,
+      aba: "pcp" as const,
     },
     {
       href: hrefObra(obraId, "/rdo"),
@@ -105,6 +105,9 @@ export function tituloPagina(pathname: string, obraId: string): string {
   const obraMeta = getObraMeta(obraId);
   const temProdutividade = !obraMeta || obraTemAba(obraMeta, "produtividade");
   const temRdo = !obraMeta || obraTemAba(obraMeta, "rdo");
+  const temVistoria = !obraMeta || obraTemAba(obraMeta, "vistoria");
+  const temHistorico = !obraMeta || obraTemAba(obraMeta, "historico");
+  const temPcp = !obraMeta || obraTemAba(obraMeta, "pcp");
 
   if (pathname === base) return temProdutividade ? "Dashboard" : "Indisponível";
   if (pathname === hrefObra(obraId, "/resumo")) return "Resumo";
@@ -112,9 +115,9 @@ export function tituloPagina(pathname: string, obraId: string): string {
   if (pathname === hrefObra(obraId, "/producao")) return "Conferência";
   if (pathname === hrefObra(obraId, "/estimativas")) return "Estimativas";
   if (pathname === hrefObra(obraId, "/frentes")) return "Frentes de serviço";
-  if (pathname === hrefObra(obraId, "/vistoria")) return "Nova Vistoria";
-  if (pathname === hrefObra(obraId, "/historico")) return "Histórico";
-  if (pathname === hrefObra(obraId, "/pcp")) return "PCP Semanal";
+  if (pathname === hrefObra(obraId, "/vistoria")) return temVistoria ? "Nova Vistoria" : "Indisponível";
+  if (pathname === hrefObra(obraId, "/historico")) return temHistorico ? "Histórico" : "Indisponível";
+  if (pathname === hrefObra(obraId, "/pcp")) return temPcp ? "PCP Semanal" : "Indisponível";
   if (pathname === hrefObra(obraId, "/rdo")) return temRdo ? "RDO Simplificado" : "Indisponível";
 
   for (const grupo of GRUPOS_SERVICO) {
@@ -287,3 +290,4 @@ export function NavContent({
     </>
   );
 }
+ 
