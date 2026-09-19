@@ -1,5 +1,6 @@
 import type { Obra } from "./types";
 import { OBRA_SICREDI } from "./default-data";
+import { OBRA_LOJA_ESPACO_SMART } from "./default-data-loja-espaco-smart";
 // OBRA_AMAGGI segue disponível em default-data-amaggi.ts (planilha alimentada
 // à parte) — descomente este import junto com o bloco abaixo quando a obra
 // fechar e voltar a aparecer no app.
@@ -36,6 +37,15 @@ export const OBRAS: ObraMeta[] = [
     descricao: "Fase final de acabamento — acompanhamento diário de produtividade.",
     foto: "/obra-sicredi.jpeg",
     obra: OBRA_SICREDI,
+  },
+  {
+    id: "loja-espaco-smart-pvh",
+    nome: OBRA_LOJA_ESPACO_SMART.nome,
+    cliente: OBRA_LOJA_ESPACO_SMART.cliente,
+    localizacao: "Porto Velho - RO",
+    status: "em_andamento",
+    descricao: "Steel Frame — acompanhamento diário de produtividade.",
+    obra: OBRA_LOJA_ESPACO_SMART,
   },
   // Amaggi ainda não fechou — tirado da listagem por pedido do Rodrigo.
   // Os dados continuam em default-data-amaggi.ts (alimentados via planilha
