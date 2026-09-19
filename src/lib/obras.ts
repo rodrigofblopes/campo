@@ -8,6 +8,9 @@ import { OBRA_LOJA_ESPACO_SMART } from "./default-data-loja-espaco-smart";
 
 export type StatusObra = "em_andamento" | "planejamento" | "concluida";
 
+/** Abas que podem ser desativadas por obra — ver `abasDesativadas` em ObraMeta. */
+export type AbaObra = "produtividade" | "rdo";
+
 export interface ObraMeta {
   /** Usado na URL: /obras/[id] */
   id: string;
@@ -18,7 +21,17 @@ export interface ObraMeta {
   descricao: string;
   /** Caminho da foto de capa em /public. Se ausente, o dashboard não mostra banner. */
   foto?: string;
+  /**
+   * Abas desativadas para esta obra — somem do menu e ficam bloqueadas
+   * mesmo por URL direta. Por padrão (ausente/vazio) a obra tem todas as
+   * abas. Ex.: obras pequenas, sem apontamento de produtividade nem RDO.
+   */
+  abasDesativadas?: AbaObra[];
   obra: Obra;
+}
+
+export function obraTemAba(obraMeta: ObraMeta, aba: AbaObra): boolean {
+  return !obraMeta.abasDesativadas?.includes(aba);
 }
 
 /**
@@ -45,6 +58,7 @@ export const OBRAS: ObraMeta[] = [
     localizacao: "Porto Velho - RO",
     status: "em_andamento",
     descricao: "Steel Frame — acompanhamento diário de produtividade.",
+    abasDesativadas: ["produtividade", "rdo"],
     obra: OBRA_LOJA_ESPACO_SMART,
   },
   // Amaggi ainda não fechou — tirado da listagem por pedido do Rodrigo.
