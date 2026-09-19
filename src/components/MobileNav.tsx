@@ -25,14 +25,14 @@ function bottomLinks(obraId: string, obraMeta: ObraMeta) {
       label: "Vistoria",
       icon: Camera,
       match: (p: string) => p === hrefObra(obraId, "/vistoria"),
-      aba: null,
+      aba: "vistoria" as const,
     },
     {
       href: hrefObra(obraId, "/historico"),
       label: "Histórico",
       icon: Clock,
       match: (p: string) => p === hrefObra(obraId, "/historico"),
-      aba: null,
+      aba: "historico" as const,
     },
     {
       href: hrefObra(obraId, "/rdo"),
@@ -46,7 +46,7 @@ function bottomLinks(obraId: string, obraMeta: ObraMeta) {
       label: "PCP",
       icon: Calendar,
       match: (p: string) => p === hrefObra(obraId, "/pcp"),
-      aba: null,
+      aba: "pcp" as const,
     },
   ];
   return todos.filter((item) => item.aba === null || obraTemAba(obraMeta, item.aba));
@@ -201,7 +201,9 @@ export function MobileBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   // Tailwind precisa das classes literais no código pra gerar o CSS —
   // por isso o mapa fixo em vez de montar "grid-cols-" + n dinamicamente.
   const colsClasse =
-    { 3: "grid-cols-4", 4: "grid-cols-5" }[links.length] ?? "grid-cols-5";
+    { 0: "grid-cols-1", 1: "grid-cols-2", 2: "grid-cols-3", 3: "grid-cols-4", 4: "grid-cols-5" }[
+      links.length
+    ] ?? "grid-cols-5";
 
   return (
     <nav
@@ -252,4 +254,5 @@ export function MobileBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
     </nav>
   );
 }
+ 
  
