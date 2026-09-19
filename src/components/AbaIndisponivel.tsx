@@ -11,11 +11,19 @@ export function AbaIndisponivel({
   obraId,
   titulo,
   mensagem,
+  destinoHref,
+  destinoLabel = "Ir para Vistoria",
 }: {
   obraId: string;
   titulo: string;
   mensagem: string;
+  /** Pra onde o botão manda — por padrão, Vistoria. Passe o resultado de
+   * `melhorDestinoDisponivel` quando a própria Vistoria também puder estar
+   * desativada pra essa obra. */
+  destinoHref?: string;
+  destinoLabel?: string;
 }) {
+  const href = destinoHref ?? hrefObra(obraId, "/vistoria");
   return (
     <div className="flex min-h-[70vh] items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm">
@@ -25,13 +33,14 @@ export function AbaIndisponivel({
         <h1 className="text-lg font-bold text-slate-900">{titulo}</h1>
         <p className="mt-1 text-sm text-slate-500">{mensagem}</p>
         <Link
-          href={hrefObra(obraId, "/vistoria")}
+          href={href}
           className="mt-5 inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
         >
-          Ir para Vistoria
+          {destinoLabel}
         </Link>
       </div>
     </div>
   );
 }
+ 
  
