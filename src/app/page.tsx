@@ -1,8 +1,11 @@
 import Image from "next/image";
-import { OBRAS } from "@/lib/obras";
+import { GRUPOS_OBRA, obrasDoGrupo, obrasSemGrupo } from "@/lib/obras";
 import { ObraCard } from "@/components/ObraCard";
+import { GrupoCard } from "@/components/GrupoCard";
 
 export default function ObrasHomePage() {
+  const obrasSoltas = obrasSemGrupo();
+
   return (
     <div className="mx-auto min-h-screen max-w-3xl px-4 py-10 sm:py-16">
       <div className="mb-10 text-center">
@@ -19,8 +22,11 @@ export default function ObrasHomePage() {
         Obras
       </p>
       <div className="space-y-4">
-        {OBRAS.map((o) => (
+        {obrasSoltas.map((o) => (
           <ObraCard key={o.id} obra={o} />
+        ))}
+        {GRUPOS_OBRA.map((grupo) => (
+          <GrupoCard key={grupo.id} grupo={grupo} obras={obrasDoGrupo(grupo.id)} />
         ))}
       </div>
 
@@ -31,3 +37,4 @@ export default function ObrasHomePage() {
     </div>
   );
 }
+ 

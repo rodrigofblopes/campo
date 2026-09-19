@@ -2,8 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Building2, MapPin } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
-import type { ObraMeta, StatusObra } from "@/lib/obras";
-import { hrefObra } from "@/lib/grupos-nav";
+import { melhorDestinoDisponivel, type ObraMeta, type StatusObra } from "@/lib/obras";
 
 const STATUS_LABEL: Record<StatusObra, string> = {
   em_andamento: "Em andamento",
@@ -23,8 +22,9 @@ const STATUS_VARIANT: Record<StatusObra, "success" | "warning" | "default"> = {
  * senha só é pedida lá dentro, ao clicar em "Produtividade" no menu.
  */
 export function ObraCard({ obra }: { obra: ObraMeta }) {
+  const destino = melhorDestinoDisponivel(obra.id, obra);
   return (
-    <Link href={hrefObra(obra.id, "/vistoria")} className="block">
+    <Link href={destino.href} className="block">
       <Card className="relative transition-all hover:border-slate-300 hover:shadow-md">
         <div className="absolute right-4 top-4">
           <Image
@@ -61,3 +61,4 @@ export function ObraCard({ obra }: { obra: ObraMeta }) {
     </Link>
   );
 }
+ 

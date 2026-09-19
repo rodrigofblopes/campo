@@ -15,35 +15,41 @@ import {
 } from "lucide-react";
 import { NavContent, tituloPagina } from "@/components/NavContent";
 import { useObra } from "@/context/ObraContext";
+import { obraTemAba, type ObraMeta } from "@/lib/obras";
 import { hrefObra } from "@/lib/grupos-nav";
 
-function bottomLinks(obraId: string) {
-  return [
+function bottomLinks(obraId: string, obraMeta: ObraMeta) {
+  const todos = [
     {
       href: hrefObra(obraId, "/vistoria"),
       label: "Vistoria",
       icon: Camera,
       match: (p: string) => p === hrefObra(obraId, "/vistoria"),
+      aba: "vistoria" as const,
     },
     {
       href: hrefObra(obraId, "/historico"),
       label: "Histórico",
       icon: Clock,
       match: (p: string) => p === hrefObra(obraId, "/historico"),
+      aba: "historico" as const,
     },
     {
       href: hrefObra(obraId, "/rdo"),
       label: "RDO",
       icon: ClipboardList,
       match: (p: string) => p === hrefObra(obraId, "/rdo"),
+      aba: "rdo" as const,
     },
     {
       href: hrefObra(obraId, "/pcp"),
       label: "PCP",
       icon: Calendar,
       match: (p: string) => p === hrefObra(obraId, "/pcp"),
+      aba: "pcp" as const,
     },
-  ] as const;
+  ];
+  return todos.filter((item) => item.aba === null || obraTemAba(obraMeta, item.aba));
 }
 
 /** "Mais" (que abre o menu completo) fica marcado como ativo quando a
@@ -189,16 +195,22 @@ export function MobileDrawer({
 
 export function MobileBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
   const pathname = usePathname();
-  const { obraId } = useObra();
+  const { obraId, obraMeta } = useObra();
   const maisAtivo = emProdutividade(pathname, obraId);
-  const links = bottomLinks(obraId);
+  const links = bottomLinks(obraId, obraMeta);
+  // Tailwind precisa das classes literais no código pra gerar o CSS —
+  // por isso o mapa fixo em vez de montar "grid-cols-" + n dinamicamente.
+  const colsClasse =
+    { 0: "grid-cols-1", 1: "grid-cols-2", 2: "grid-cols-3", 3: "grid-cols-4", 4: "grid-cols-5" }[
+      links.length
+    ] ?? "grid-cols-5";
 
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/90 lg:hidden"
       aria-label="Navegação principal"
     >
-      <div className="mx-auto grid max-w-lg grid-cols-5 px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1">
+      <div className={`mx-auto grid max-w-lg ${colsClasse} px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1`}>
         {links.map(({ href, label, icon: Icon, match }) => {
           const active = match(pathname);
           return (
@@ -242,3 +254,5 @@ export function MobileBottomNav({ onOpenMenu }: { onOpenMenu: () => void }) {
     </nav>
   );
 }
+ 
+ 

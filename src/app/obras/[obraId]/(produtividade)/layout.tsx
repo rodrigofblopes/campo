@@ -3,7 +3,9 @@
 import { useState, useSyncExternalStore } from "react";
 import { Lock } from "lucide-react";
 import { AppShell } from "@/components/ui";
+import { AbaIndisponivel } from "@/components/AbaIndisponivel";
 import { useObra } from "@/context/ObraContext";
+import { melhorDestinoDisponivel, obraTemAba } from "@/lib/obras";
 import {
   desbloquearProdutividade,
   produtividadeLiberadaSnapshot,
@@ -29,6 +31,21 @@ export default function ProdutividadeLayout({
   );
   const [senha, setSenha] = useState("");
   const [erro, setErro] = useState(false);
+
+  if (!obraTemAba(obraMeta, "produtividade")) {
+    const destino = melhorDestinoDisponivel(obraId, obraMeta);
+    return (
+      <AppShell>
+        <AbaIndisponivel
+          obraId={obraId}
+          titulo="Produtividade"
+          mensagem={`Essa obra (${obraMeta.nome}) não tem dashboard de produtividade.`}
+          destinoHref={destino.href}
+          destinoLabel={destino.label}
+        />
+      </AppShell>
+    );
+  }
 
   function confirmar() {
     if (senha === SENHA_PRODUTIVIDADE) {
@@ -92,3 +109,5 @@ export default function ProdutividadeLayout({
 
   return <>{children}</>;
 }
+ 
+ 

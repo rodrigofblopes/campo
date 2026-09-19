@@ -1,7 +1,6 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   BarChart3,
@@ -16,6 +15,7 @@ import {
   Lock,
 } from "lucide-react";
 import { useObra } from "@/context/ObraContext";
+import { getObraMeta, obraTemAba, type ObraMeta } from "@/lib/obras";
 import { GRUPOS_SERVICO } from "@/lib/servicos";
 import { hrefGrupo, hrefObra } from "@/lib/grupos-nav";
 import {
@@ -26,40 +26,47 @@ import {
 
 /** Itens principais do menu unificado da obra — nesta ordem. "Produtividade"
  * fica protegida por senha (pedida na hora, ao clicar); os demais são de
- * acesso livre, usados no dia a dia de campo. */
-export function linksPrincipais(obraId: string) {
-  return [
+ * acesso livre, usados no dia a dia de campo. Itens com `aba` somem do
+ * menu quando a obra não tem essa aba (ver `abasDesativadas` em ObraMeta). */
+export function linksPrincipais(obraId: string, obraMeta: ObraMeta) {
+  const todos = [
     {
       href: hrefObra(obraId),
       label: "Produtividade",
       icon: BarChart3,
       protegido: true,
+      aba: "produtividade" as const,
     },
     {
       href: hrefObra(obraId, "/vistoria"),
       label: "Nova Vistoria",
       icon: Camera,
       protegido: false,
+      aba: "vistoria" as const,
     },
     {
       href: hrefObra(obraId, "/historico"),
       label: "Histórico",
       icon: Clock,
       protegido: false,
+      aba: "historico" as const,
     },
     {
       href: hrefObra(obraId, "/pcp"),
       label: "PCP Semanal",
       icon: Calendar,
       protegido: false,
+      aba: "pcp" as const,
     },
     {
       href: hrefObra(obraId, "/rdo"),
       label: "RDO Simplificado",
       icon: ClipboardList,
       protegido: false,
+      aba: "rdo" as const,
     },
-  ] as const;
+  ];
+  return todos.filter((item) => item.aba === null || obraTemAba(obraMeta, item.aba));
 }
 
 /** Sub-itens que só aparecem indentados sob "Produtividade" quando o
@@ -95,16 +102,23 @@ function emProdutividade(pathname: string, obraId: string): boolean {
 
 export function tituloPagina(pathname: string, obraId: string): string {
   const base = hrefObra(obraId);
-  if (pathname === base) return "Dashboard";
+  const obraMeta = getObraMeta(obraId);
+  const temProdutividade = !obraMeta || obraTemAba(obraMeta, "produtividade");
+  const temRdo = !obraMeta || obraTemAba(obraMeta, "rdo");
+  const temVistoria = !obraMeta || obraTemAba(obraMeta, "vistoria");
+  const temHistorico = !obraMeta || obraTemAba(obraMeta, "historico");
+  const temPcp = !obraMeta || obraTemAba(obraMeta, "pcp");
+
+  if (pathname === base) return temProdutividade ? "Dashboard" : "Indisponível";
   if (pathname === hrefObra(obraId, "/resumo")) return "Resumo";
   if (pathname === hrefObra(obraId, "/relatorios")) return "Relatório PDF";
   if (pathname === hrefObra(obraId, "/producao")) return "Conferência";
   if (pathname === hrefObra(obraId, "/estimativas")) return "Estimativas";
   if (pathname === hrefObra(obraId, "/frentes")) return "Frentes de serviço";
-  if (pathname === hrefObra(obraId, "/vistoria")) return "Nova Vistoria";
-  if (pathname === hrefObra(obraId, "/historico")) return "Histórico";
-  if (pathname === hrefObra(obraId, "/pcp")) return "PCP Semanal";
-  if (pathname === hrefObra(obraId, "/rdo")) return "RDO Simplificado";
+  if (pathname === hrefObra(obraId, "/vistoria")) return temVistoria ? "Nova Vistoria" : "Indisponível";
+  if (pathname === hrefObra(obraId, "/historico")) return temHistorico ? "Histórico" : "Indisponível";
+  if (pathname === hrefObra(obraId, "/pcp")) return temPcp ? "PCP Semanal" : "Indisponível";
+  if (pathname === hrefObra(obraId, "/rdo")) return temRdo ? "RDO Simplificado" : "Indisponível";
 
   for (const grupo of GRUPOS_SERVICO) {
     const href = hrefGrupo(obraId, grupo.id);
@@ -151,18 +165,7 @@ export function NavContent({
     <>
       {showBranding && (
         <div className="border-b border-slate-700 px-3 py-4">
-          <div className="overflow-hidden rounded-lg bg-white px-2 py-2">
-            <Image
-              src="/logo_netolara.jpg"
-              alt="Neto Lara Steel Frame"
-              width={320}
-              height={120}
-              className="mx-auto h-auto w-full min-h-[88px] max-h-32 object-contain object-center scale-110 lg:min-h-[104px] lg:max-h-40"
-              priority
-              unoptimized
-            />
-          </div>
-          <h1 className="mt-3 text-base font-bold leading-tight">Campo</h1>
+          <h1 className="text-base font-bold leading-tight">Campo</h1>
           <p className="mt-0.5 text-xs text-slate-400">
             Obra {obraMeta.nome} · Steel Frame
           </p>
@@ -180,7 +183,7 @@ export function NavContent({
             Trocar de obra
           </Link>
 
-          {linksPrincipais(obraId).map(({ href, label, icon: Icon, protegido }) => {
+          {linksPrincipais(obraId, obraMeta).map(({ href, label, icon: Icon, protegido }) => {
             const active =
               label === "Produtividade" ? dentroProdutividade : pathname === href;
             const mostrarCadeado = protegido && !produtividadeLiberada;
@@ -287,3 +290,4 @@ export function NavContent({
     </>
   );
 }
+ 
