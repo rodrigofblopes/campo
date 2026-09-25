@@ -139,15 +139,27 @@ async function desenharFotoPendencia(
     }
   };
 
+  // Colunas: foto(s) do problema (até 2) e, se houver, a de conclusão.
+  const antes = [item.foto, item.foto2].filter((f): f is string => Boolean(f));
+  const colunas: { src: string | null; selo?: { texto: string; cor: string } }[] = antes.length
+    ? antes.map((src) => ({ src }))
+    : [{ src: null }];
   if (item.fotoDepois) {
-    const gap = Math.max(12, Math.round(w * 0.03));
-    const colW = (w - gap) / 2;
-    await desenharUma(item.foto, x, y, colW, h);
-    await desenharUma(item.fotoDepois, x + colW + gap, y, colW, h);
-    desenharSeloFoto(ctx, "ANTES", "#64748b", x + 12, y + 12, fonteSelo);
-    desenharSeloFoto(ctx, "CONCLUÍDO", "#059669", x + colW + gap + 12, y + 12, fonteSelo);
-  } else {
-    await desenharUma(item.foto, x, y, w, h);
+    for (const c of colunas) c.selo = { texto: "ANTES", cor: "#64748b" };
+    colunas.push({ src: item.fotoDepois, selo: { texto: "CONCLUÍDO", cor: "#059669" } });
+  }
+
+  if (colunas.length === 1) {
+    await desenharUma(colunas[0].src, x, y, w, h);
+    return;
+  }
+  const gap = Math.max(12, Math.round(w * 0.03));
+  const colW = (w - gap * (colunas.length - 1)) / colunas.length;
+  for (let i = 0; i < colunas.length; i++) {
+    const cx = x + i * (colW + gap);
+    await desenharUma(colunas[i].src, cx, y, colW, h);
+    const selo = colunas[i].selo;
+    if (selo) desenharSeloFoto(ctx, selo.texto, selo.cor, cx + 12, y + 12, fonteSelo);
   }
 }
 
@@ -166,12 +178,6 @@ function quebrarTexto(ctx: CanvasRenderingContext2D, texto: string, maxWidth: nu
   }
   if (linha) linhas.push(linha);
   return linhas;
-}
-
-function corPrioridade(prioridade: string): string {
-  if (prioridade === "Alta") return "#dc2626";
-  if (prioridade === "Média") return "#d97706";
-  return "#64748b";
 }
 
 function corStatus(status: string): string {
@@ -252,7 +258,6 @@ export async function gerarImagemPendencia(
   const status = statusEfetivo(item, hoje);
   const badges = [
     ...(item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
-    { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
     { texto: status, cor: corStatus(status) },
   ];
   let bx = 48;
@@ -434,14 +439,14 @@ async function gerarImagemBase(
     ctx.fillText(subtitulo, PAD + 20, 208);
     ctx.font = "400 22px sans-serif";
     ctx.fillText(
-      `${formatarDataBr(vistoria.data)} · Responsável: ${vistoria.responsavelVistoria || "-"} · ${itens.length} pendência(s)`,
+      `${formatarDataBr(vistoria.data)}${vistoria.responsavelVistoria ? ` · Responsável: ${vistoria.responsavelVistoria}` : ""} · ${itens.length} pendência(s)`,
       PAD,
       244
     );
   } else {
     ctx.font = "400 24px sans-serif";
     ctx.fillText(
-      `${formatarDataBr(vistoria.data)} · Responsável: ${vistoria.responsavelVistoria || "-"} · ${itens.length} pendência(s)`,
+      `${formatarDataBr(vistoria.data)}${vistoria.responsavelVistoria ? ` · Responsável: ${vistoria.responsavelVistoria}` : ""} · ${itens.length} pendência(s)`,
       PAD,
       200
     );
@@ -489,7 +494,6 @@ async function gerarImagemBase(
     let bx = textX;
     const badgesResumo = [
       ...(!ocultarBadgeEquipe && item.equipe ? [{ texto: item.equipe, cor: "#0891b2" }] : []),
-      { texto: `Prioridade ${item.prioridade}`, cor: corPrioridade(item.prioridade) },
       { texto: status, cor: corStatus(status) },
     ];
     for (const b of badgesResumo) {

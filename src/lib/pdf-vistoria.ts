@@ -36,6 +36,32 @@ function responsavelComEquipe(item: PendenciaVistoria): string {
   return item.equipe ? `${item.responsavel || "-"} (${item.equipe})` : item.responsavel || "-";
 }
 
+/** Desenha uma foto extra (ex.: a 2ª foto do problema) abaixo do bloco da
+ * pendência, com um rótulo curto. Falha ao anexar é ignorada. */
+export function desenharFotoExtra(
+  doc: jsPDF,
+  dataUrl: string,
+  rotulo: string,
+  y: number,
+  pageH: number,
+  margem: number
+): number {
+  y = checkPageBreak(doc, y, 68, pageH);
+  try {
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(rotulo, margem, y);
+    y += 4;
+    const { w, h } = ajustarAoBox(doc, dataUrl, 65, 58);
+    doc.setDrawColor(215);
+    doc.rect(margem - 0.5, y - 0.5, w + 1, h + 1);
+    doc.addImage(dataUrl, "JPEG", margem, y, w, h);
+    return y + h + 6;
+  } catch {
+    return y;
+  }
+}
+
 function textoFallback(doc: jsPDF, item: PendenciaVistoria, y: number, pageW: number, margem: number): number {
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
@@ -87,11 +113,15 @@ export function gerarPDFVistoria(vistoria: VistoriaObra): jsPDF {
   doc.setFont("helvetica", "normal");
   doc.text(vistoria.obraNome || "-", margem + 15, y);
   y += 6.5;
-  doc.setFont("helvetica", "bold");
-  doc.text("Responsável pela vistoria:", margem, y);
-  doc.setFont("helvetica", "normal");
-  doc.text(vistoria.responsavelVistoria || "-", margem + 55, y);
-  y += 6.5;
+  // Campo descontinuado no formulário — só aparece em vistorias antigas
+  // que ainda trazem o nome preenchido.
+  if (vistoria.responsavelVistoria) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Responsável pela vistoria:", margem, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(vistoria.responsavelVistoria, margem + 55, y);
+    y += 6.5;
+  }
   doc.setFont("helvetica", "bold");
   doc.text("Data:", margem, y);
   doc.setFont("helvetica", "normal");
@@ -106,7 +136,7 @@ export function gerarPDFVistoria(vistoria: VistoriaObra): jsPDF {
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text(
-      `Pendência ${i + 1} — ${statusEfetivo(item, hoje)} — Prioridade ${item.prioridade}${item.equipe ? ` — ${item.equipe}` : ""}`,
+      `Pendência ${i + 1} — ${statusEfetivo(item, hoje)}${item.equipe ? ` — ${item.equipe}` : ""}`,
       margem + 2,
       y
     );
@@ -145,6 +175,10 @@ export function gerarPDFVistoria(vistoria: VistoriaObra): jsPDF {
       }
     } else {
       y = textoFallback(doc, item, y, pageW, margem);
+    }
+
+    if (item.foto2) {
+      y = desenharFotoExtra(doc, item.foto2, "Foto 2:", y, pageH, margem);
     }
 
     if (item.status === "Concluído") {

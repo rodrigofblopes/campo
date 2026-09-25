@@ -22,7 +22,13 @@ import type {
   StatusPendencia,
   VistoriaObra,
 } from "@/lib/vistoria-types";
-import { EQUIPES, statusEfetivo } from "@/lib/vistoria-types";
+import {
+  EQUIPES,
+  MAX_FOTOS_PENDENCIA,
+  fotosPendencia,
+  patchFotos,
+  statusEfetivo,
+} from "@/lib/vistoria-types";
 import type { ObraMeta } from "@/lib/obras";
 
 function novoId(): string {
@@ -47,10 +53,11 @@ function novaPendenciaDraft(): PendenciaVistoria {
     local: "",
     responsavel: "",
     equipe: "",
-    prioridade: "Média",
+    inicioPrevisto: "",
     prazo: "",
     descricao: "",
     foto: null,
+    foto2: null,
     status: "Pendente",
     fotoDepois: null,
     concluidoEm: null,
@@ -90,6 +97,92 @@ async function lerArquivoComoDataUrl(file: File): Promise<string> {
   } catch {
     return lerArquivoComoDataUrlBruto(file);
   }
+}
+
+/** Data de hoje (yyyy-mm-dd) no fuso do aparelho — vira a data do registro
+ * da vistoria automaticamente, sem campo no formulário. */
+function hojeLocalISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Fotos do problema de uma pendência: até 2, nenhuma obrigatória. Mostra
+ * as miniaturas com botão de remover e só oferece "Adicionar" enquanto
+ * houver vaga. */
+function FotosPendenciaInput({
+  fotos,
+  onChange,
+  confirmarRemocao = false,
+  compacto = false,
+}: {
+  fotos: string[];
+  onChange: (fotos: string[]) => void;
+  confirmarRemocao?: boolean;
+  compacto?: boolean;
+}) {
+  const vagas = MAX_FOTOS_PENDENCIA - fotos.length;
+
+  async function adicionar(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    const selecionados = Array.from(files).slice(0, vagas);
+    const novas = await Promise.all(selecionados.map((f) => lerArquivoComoDataUrl(f)));
+    onChange([...fotos, ...novas].slice(0, MAX_FOTOS_PENDENCIA));
+  }
+
+  function remover(idx: number) {
+    if (confirmarRemocao && !window.confirm("Remover esta foto?")) return;
+    onChange(fotos.filter((_, i) => i !== idx));
+  }
+
+  const tamanho = compacto ? "h-28 w-28" : "h-32 w-full";
+
+  return (
+    <div>
+      <span className="text-xs font-medium text-slate-500">
+        Fotos <span className="font-normal text-slate-400">(até {MAX_FOTOS_PENDENCIA}, opcional)</span>
+      </span>
+      {fotos.length > 0 && (
+        <div className={`mt-2 ${compacto ? "flex flex-wrap gap-3" : "grid grid-cols-2 gap-2"}`}>
+          {fotos.map((src, idx) => (
+            <div key={idx} className="relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={src} alt={`Foto ${idx + 1} da pendência`} className={`${tamanho} rounded-lg object-cover`} />
+              <button
+                type="button"
+                onClick={() => remover(idx)}
+                aria-label={`Remover foto ${idx + 1}`}
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {vagas > 0 && (
+        <label
+          className={
+            compacto
+              ? "mt-2 flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
+              : "mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+          }
+        >
+          <Camera size={compacto ? 13 : 16} />
+          {fotos.length === 0 ? "Tirar / escolher foto" : "Adicionar 2ª foto"}
+          <input
+            type="file"
+            accept="image/*"
+            multiple={vagas > 1}
+            className="hidden"
+            onChange={(e) => {
+              adicionar(e.target.files);
+              e.target.value = "";
+            }}
+          />
+        </label>
+      )}
+    </div>
+  );
 }
 
 function badgeVariant(status: string): "default" | "success" | "warning" | "danger" {
@@ -150,8 +243,6 @@ export function VistoriaContent({
   const [aba, setAba] = useState<"nova" | "historico" | "pcp" | "rdo">(abaFixa ?? "nova");
 
   // ---- formulário de nova vistoria ----
-  const [responsavelVistoria, setResponsavelVistoria] = useState("");
-  const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
   const [itens, setItens] = useState<PendenciaVistoria[]>([novaPendenciaDraft()]);
   const [salvando, setSalvando] = useState(false);
 
@@ -314,12 +405,6 @@ export function VistoriaContent({
     setItens((lista) => lista.filter((it) => it.id !== id));
   }
 
-  async function onFoto(id: string, file: File | undefined) {
-    if (!file) return;
-    const dataUrl = await lerArquivoComoDataUrl(file);
-    atualizarItem(id, { foto: dataUrl });
-  }
-
   function validar(): string | null {
     if (itens.length === 0) return "Adicione ao menos uma pendência.";
     for (const it of itens) {
@@ -335,8 +420,8 @@ export function VistoriaContent({
       id: novoId(),
       obraId,
       obraNome: obraMeta.nome,
-      responsavelVistoria,
-      data,
+      responsavelVistoria: "",
+      data: hojeLocalISO(),
       criadoEm: new Date().toISOString(),
       itens,
     };
@@ -344,8 +429,6 @@ export function VistoriaContent({
 
   function limparFormulario() {
     setItens([novaPendenciaDraft()]);
-    setResponsavelVistoria("");
-    setData(new Date().toISOString().slice(0, 10));
   }
 
   async function handleEnviarWhatsApp(formato: "pdf" | "imagem") {
@@ -465,26 +548,18 @@ export function VistoriaContent({
     setRascunho(null);
   }
 
-  function atualizarRascunho(patch: Partial<Pick<VistoriaObra, "responsavelVistoria" | "data">>) {
-    setRascunho((r) => (r ? { ...r, ...patch } : r));
-  }
-
   function atualizarItemRascunho(itemId: string, patch: Partial<PendenciaVistoria>) {
     setRascunho((r) =>
       r ? { ...r, itens: r.itens.map((it) => (it.id === itemId ? { ...it, ...patch } : it)) } : r
     );
   }
 
-  // Troca ou remove a foto (antes/depois) de uma pendência dentro do
+  // Troca ou remove a foto de conclusão de uma pendência dentro do
   // rascunho de edição — nada é salvo até "Salvar alterações".
-  async function handleFotoRascunho(
-    itemId: string,
-    campo: "foto" | "fotoDepois",
-    file: File | undefined
-  ) {
+  async function handleFotoDepoisRascunho(itemId: string, file: File | undefined) {
     if (!file) return;
     const dataUrl = await lerArquivoComoDataUrl(file);
-    atualizarItemRascunho(itemId, { [campo]: dataUrl });
+    atualizarItemRascunho(itemId, { fotoDepois: dataUrl });
   }
 
   function removerItemRascunho(itemId: string) {
@@ -493,10 +568,9 @@ export function VistoriaContent({
 
   // Excluir foto ou pendência não tem desfazer dentro da edição — confirma
   // antes pra evitar clique acidental.
-  function handleRemoverFotoRascunho(itemId: string, campo: "foto" | "fotoDepois") {
-    const msg = campo === "foto" ? "Remover a foto (antes)?" : "Remover a foto de conclusão?";
-    if (!window.confirm(msg)) return;
-    atualizarItemRascunho(itemId, { [campo]: null });
+  function handleRemoverFotoDepoisRascunho(itemId: string) {
+    if (!window.confirm("Remover a foto de conclusão?")) return;
+    atualizarItemRascunho(itemId, { fotoDepois: null });
   }
 
   function handleRemoverItemRascunho(itemId: string) {
@@ -533,7 +607,7 @@ export function VistoriaContent({
   > = {
     nova: {
       title: "Nova Vistoria",
-      description: "Registre pendências com foto, prazo e responsável — e envie a Atividade por WhatsApp para quem vai executar.",
+      description: "Registre pendências com até 2 fotos, início, prazo e responsável — e envie a Atividade por WhatsApp para quem vai executar.",
     },
     historico: {
       title: "Histórico de Vistorias",
@@ -579,30 +653,7 @@ export function VistoriaContent({
 
       {aba === "nova" && (
         <>
-          <Card className="mb-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="text-xs font-medium text-slate-500">Responsável pela vistoria</span>
-                <input
-                  type="text"
-                  value={responsavelVistoria}
-                  onChange={(e) => setResponsavelVistoria(e.target.value)}
-                  placeholder="Seu nome"
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-              <label className="block">
-                <span className="text-xs font-medium text-slate-500">Data</span>
-                <input
-                  type="date"
-                  value={data}
-                  onChange={(e) => setData(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                />
-              </label>
-            </div>
-            <p className="mt-3 text-xs text-slate-400">Obra: {obraMeta.nome}</p>
-          </Card>
+          <p className="mb-3 text-xs text-slate-400">Obra: {obraMeta.nome}</p>
 
           <div className="space-y-4">
             {itens.map((item, idx) => (
@@ -644,39 +695,21 @@ export function VistoriaContent({
                   </label>
                 </div>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-500">Equipe</span>
-                    <select
-                      value={item.equipe || ""}
-                      onChange={(e) => atualizarItem(item.id, { equipe: e.target.value })}
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    >
-                      <option value="">Selecione</option>
-                      {EQUIPES.map((eq) => (
-                        <option key={eq} value={eq}>
-                          {eq}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block">
-                    <span className="text-xs font-medium text-slate-500">Prioridade</span>
-                    <select
-                      value={item.prioridade}
-                      onChange={(e) =>
-                        atualizarItem(item.id, {
-                          prioridade: e.target.value as PendenciaVistoria["prioridade"],
-                        })
-                      }
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                    >
-                      <option value="Baixa">Baixa</option>
-                      <option value="Média">Média</option>
-                      <option value="Alta">Alta</option>
-                    </select>
-                  </label>
-                </div>
+                <label className="mt-3 block">
+                  <span className="text-xs font-medium text-slate-500">Equipe</span>
+                  <select
+                    value={item.equipe || ""}
+                    onChange={(e) => atualizarItem(item.id, { equipe: e.target.value })}
+                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  >
+                    <option value="">Selecione</option>
+                    {EQUIPES.map((eq) => (
+                      <option key={eq} value={eq}>
+                        {eq}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <label className="block">
@@ -711,25 +744,10 @@ export function VistoriaContent({
                 </label>
 
                 <div className="mt-3">
-                  <span className="text-xs font-medium text-slate-500">Foto</span>
-                  {item.foto && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.foto}
-                      alt="Foto da pendência"
-                      className="mt-2 max-h-40 w-full rounded-lg object-cover"
-                    />
-                  )}
-                  <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100">
-                    <Camera size={16} />
-                    {item.foto ? "Trocar foto" : "Tirar / escolher foto"}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => onFoto(item.id, e.target.files?.[0])}
-                    />
-                  </label>
+                  <FotosPendenciaInput
+                    fotos={fotosPendencia(item)}
+                    onChange={(fotos) => atualizarItem(item.id, patchFotos(fotos))}
+                  />
                 </div>
               </Card>
             ))}
@@ -909,7 +927,8 @@ export function VistoriaContent({
                     >
                       <div className="min-w-0">
                         <h3 className="text-sm font-bold text-slate-900">
-                          {v.data.split("-").reverse().join("/")} · {v.responsavelVistoria || "-"}
+                          {v.data.split("-").reverse().join("/")}
+                          {v.responsavelVistoria ? ` · ${v.responsavelVistoria}` : ""}
                         </h3>
                         <p className="mt-0.5 text-xs text-slate-500">
                           <span className="font-semibold text-blue-600">
@@ -970,27 +989,6 @@ export function VistoriaContent({
 
                     {aberto && editandoId === v.id && rascunho && (
                       <div className="space-y-3 border-t border-slate-100 p-4">
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <label className="block">
-                            <span className="text-xs font-medium text-slate-500">Responsável pela vistoria</span>
-                            <input
-                              type="text"
-                              value={rascunho.responsavelVistoria}
-                              onChange={(e) => atualizarRascunho({ responsavelVistoria: e.target.value })}
-                              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                            />
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-medium text-slate-500">Data</span>
-                            <input
-                              type="date"
-                              value={rascunho.data}
-                              onChange={(e) => atualizarRascunho({ data: e.target.value })}
-                              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                            />
-                          </label>
-                        </div>
-
                         {rascunho.itens.map((item, idx) => (
                           <div key={item.id} className="rounded-lg bg-slate-50 p-3">
                             <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">
@@ -1016,39 +1014,21 @@ export function VistoriaContent({
                                 />
                               </label>
                             </div>
-                            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                              <label className="block">
-                                <span className="text-xs font-medium text-slate-500">Equipe</span>
-                                <select
-                                  value={item.equipe || ""}
-                                  onChange={(e) => atualizarItemRascunho(item.id, { equipe: e.target.value })}
-                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                                >
-                                  <option value="">Selecione</option>
-                                  {EQUIPES.map((eq) => (
-                                    <option key={eq} value={eq}>
-                                      {eq}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                              <label className="block">
-                                <span className="text-xs font-medium text-slate-500">Prioridade</span>
-                                <select
-                                  value={item.prioridade}
-                                  onChange={(e) =>
-                                    atualizarItemRascunho(item.id, {
-                                      prioridade: e.target.value as PendenciaVistoria["prioridade"],
-                                    })
-                                  }
-                                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                                >
-                                  <option value="Baixa">Baixa</option>
-                                  <option value="Média">Média</option>
-                                  <option value="Alta">Alta</option>
-                                </select>
-                              </label>
-                            </div>
+                            <label className="mt-2 block">
+                              <span className="text-xs font-medium text-slate-500">Equipe</span>
+                              <select
+                                value={item.equipe || ""}
+                                onChange={(e) => atualizarItemRascunho(item.id, { equipe: e.target.value })}
+                                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                              >
+                                <option value="">Selecione</option>
+                                {EQUIPES.map((eq) => (
+                                  <option key={eq} value={eq}>
+                                    {eq}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
                             <div className="mt-2 grid gap-2 sm:grid-cols-2">
                               <label className="block">
                                 <span className="text-xs font-medium text-slate-500">Data de início</span>
@@ -1082,39 +1062,12 @@ export function VistoriaContent({
                             </label>
 
                             <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                              <div>
-                                <span className="text-xs font-medium text-slate-500">Foto (antes)</span>
-                                {item.foto ? (
-                                  <div className="relative mt-2 inline-block">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                      src={item.foto}
-                                      alt="Foto da pendência"
-                                      className="h-28 w-28 rounded-lg object-cover"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRemoverFotoRascunho(item.id, "foto")}
-                                      aria-label="Remover foto"
-                                      className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
-                                    >
-                                      <X size={12} />
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <p className="mt-1 text-xs text-slate-400">Sem foto.</p>
-                                )}
-                                <label className="mt-2 flex w-fit cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100">
-                                  <Camera size={13} />
-                                  {item.foto ? "Trocar foto" : "Adicionar foto"}
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => handleFotoRascunho(item.id, "foto", e.target.files?.[0])}
-                                  />
-                                </label>
-                              </div>
+                              <FotosPendenciaInput
+                                fotos={fotosPendencia(item)}
+                                onChange={(fotos) => atualizarItemRascunho(item.id, patchFotos(fotos))}
+                                confirmarRemocao
+                                compacto
+                              />
 
                               <div>
                                 <span className="text-xs font-medium text-slate-500">Foto (depois / conclusão)</span>
@@ -1128,7 +1081,7 @@ export function VistoriaContent({
                                     />
                                     <button
                                       type="button"
-                                      onClick={() => handleRemoverFotoRascunho(item.id, "fotoDepois")}
+                                      onClick={() => handleRemoverFotoDepoisRascunho(item.id)}
                                       aria-label="Remover foto de conclusão"
                                       className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow hover:bg-red-700"
                                     >
@@ -1145,9 +1098,7 @@ export function VistoriaContent({
                                     type="file"
                                     accept="image/*"
                                     className="hidden"
-                                    onChange={(e) =>
-                                      handleFotoRascunho(item.id, "fotoDepois", e.target.files?.[0])
-                                    }
+                                    onChange={(e) => handleFotoDepoisRascunho(item.id, e.target.files?.[0])}
                                   />
                                 </label>
                               </div>
@@ -1214,23 +1165,24 @@ export function VistoriaContent({
                                 Prazo: {item.prazo ? item.prazo.split("-").reverse().join("/") : "-"} · Responsável:{" "}
                                 {item.responsavel || "-"}
                               </p>
-                              {(item.foto || item.fotoDepois) && (
+                              {(item.foto || item.foto2 || item.fotoDepois) && (
                                 <div className="mt-2 flex gap-2">
-                                  {item.foto && (
+                                  {fotosPendencia(item).map((src, fi) => (
                                     <button
+                                      key={fi}
                                       type="button"
-                                      onClick={() => setFotoAmpliada(item.foto)}
+                                      onClick={() => setFotoAmpliada(src)}
                                       className="overflow-hidden rounded-lg"
-                                      aria-label="Ampliar foto antes"
+                                      aria-label={`Ampliar foto ${fi + 1}`}
                                     >
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
-                                        src={item.foto}
-                                        alt="Antes"
+                                        src={src}
+                                        alt={`Antes ${fi + 1}`}
                                         className="h-16 w-16 rounded-lg object-cover transition-transform hover:scale-105"
                                       />
                                     </button>
-                                  )}
+                                  ))}
                                   {item.fotoDepois && (
                                     <button
                                       type="button"
@@ -1614,7 +1566,6 @@ export function VistoriaContent({
 
                 <div className="mb-3 flex flex-wrap gap-1.5">
                   {itemSelecionado.equipe && <Badge variant="default">{itemSelecionado.equipe}</Badge>}
-                  <Badge variant="default">Prioridade {itemSelecionado.prioridade}</Badge>
                   <Badge variant={badgeVariant(statusEfetivo(itemSelecionado, hojeISO))}>
                     {statusEfetivo(itemSelecionado, hojeISO)}
                   </Badge>
@@ -1638,16 +1589,17 @@ export function VistoriaContent({
                   <p>Responsável: {itemSelecionado.responsavel || "-"}</p>
                 </div>
 
-                {(itemSelecionado.foto || itemSelecionado.fotoDepois) && (
+                {(itemSelecionado.foto || itemSelecionado.foto2 || itemSelecionado.fotoDepois) && (
                   <div className="flex gap-2">
-                    {itemSelecionado.foto && (
+                    {fotosPendencia(itemSelecionado).map((src, fi) => (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={itemSelecionado.foto}
-                        alt="Antes"
+                        key={fi}
+                        src={src}
+                        alt={`Antes ${fi + 1}`}
                         className="h-24 w-24 rounded-lg object-cover"
                       />
-                    )}
+                    ))}
                     {itemSelecionado.fotoDepois && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img

@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { PendenciaVistoria } from "./vistoria-types";
 import { statusEfetivo } from "./vistoria-types";
+import { desenharFotoExtra } from "./pdf-vistoria";
 
 const URL_BASE = "https://campo-one.vercel.app";
 
@@ -293,7 +294,7 @@ export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp, detalhado = fal
       itensDaSemana.forEach((it, i) => {
         const temFoto = Boolean(it.foto);
         const temFotoDepois = Boolean(it.fotoDepois);
-        const estimativaAltura = temFoto ? (temFotoDepois ? 140 : 78) : 40;
+        const estimativaAltura = temFoto ? (temFotoDepois || it.foto2 ? 140 : 78) : 40;
         y = checkPageBreak(doc, y, estimativaAltura, pageH);
 
         const situacao = statusEfetivo(it, hoje);
@@ -356,6 +357,10 @@ export function gerarPDFPcp({ obraNome, dias, itens }: DadosPcp, detalhado = fal
           }
         } else {
           y = camposTexto(doc, it, y, pageW, margem, situacao);
+        }
+
+        if (it.foto2) {
+          y = desenharFotoExtra(doc, it.foto2, "Foto 2:", y, pageH, margem);
         }
 
         if (temFotoDepois && it.fotoDepois) {
