@@ -111,7 +111,7 @@ export const OBRAS: ObraMeta[] = [
     id: "sicredi",
     nome: OBRA_SICREDI.nome,
     cliente: OBRA_SICREDI.cliente,
-    status: "em_andamento",
+    status: "concluida",
     descricao: "Obra entregue — fica só o dashboard de produtividade, pra consulta.",
     foto: "/obra-sicredi.jpeg",
     // Obra já entregue — some o dia a dia de campo (vistoria, histórico, PCP,
