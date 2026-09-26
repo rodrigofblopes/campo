@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Building2, MapPin } from "lucide-react";
 import { Card, Badge } from "@/components/ui";
@@ -25,23 +24,12 @@ export function ObraCard({ obra }: { obra: ObraMeta }) {
   const destino = melhorDestinoDisponivel(obra.id, obra);
   return (
     <Link href={destino.href} className="block">
-      <Card className="relative transition-all hover:border-slate-300 hover:shadow-md">
-        <div className="absolute right-4 top-4">
-          <Image
-            src="/logo_netolara.jpg"
-            alt="Netolara"
-            width={64}
-            height={24}
-            className="h-5 w-auto object-contain opacity-70"
-            unoptimized
-          />
-        </div>
-
+      <Card className="transition-all hover:border-slate-300 hover:shadow-md">
         <div className="flex w-full items-center gap-4 text-left">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
             <Building2 size={22} />
           </div>
-          <div className="min-w-0 flex-1 pr-12">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-lg font-bold text-slate-900">{obra.nome}</h2>
               <Badge variant={STATUS_VARIANT[obra.status]}>
